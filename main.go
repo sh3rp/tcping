@@ -3,15 +3,18 @@ package main
 import (
 	"flag"
 	"fmt"
+	"time"
 
 	"github.com/sh3rp/tcping/tcping"
 )
 
 func main() {
 	flag.Parse()
-	host := flag.Arg(0)
+	dst := flag.Arg(0)
+	src := tcping.GetInterface()
 	for {
-		latency := tcping.GetLatency(tcping.GetInterface(), host, 80)
-		fmt.Println("Host: %s (%dms)", host, latency)
+		latency := tcping.GetLatency(src, dst, 80)
+		fmt.Printf("%s -> %s (%dms)\n", src, dst, latency)
+		time.Sleep(time.Second)
 	}
 }

@@ -1,7 +1,6 @@
 package tcping
 
 import (
-	"fmt"
 	"log"
 	"math/rand"
 	"net"
@@ -55,6 +54,7 @@ func SendPing(srcIP, dstIP string, srcPort, dstPort uint16) time.Time {
 	}
 
 	data := packet.MarshalTCP()
+
 	packet.Checksum = Checksum(data, to4byte(srcIP), to4byte(dstIP))
 
 	data = packet.MarshalTCP()
@@ -87,7 +87,7 @@ func SendPing(srcIP, dstIP string, srcPort, dstPort uint16) time.Time {
 func WaitForResponse(localAddress, remoteAddress string, port uint16) time.Time {
 	netaddr, err := net.ResolveIPAddr("ip4", localAddress)
 	if err != nil {
-		log.Println("net.ResolveIPAddr: %s. %s\n", localAddress, netaddr)
+		log.Printf("ERROR: net.ResolveIPAddr: %s. %s\n", localAddress, netaddr)
 		return time.Now()
 	}
 
@@ -105,13 +105,10 @@ func WaitForResponse(localAddress, remoteAddress string, port uint16) time.Time 
 			return time.Now()
 		}
 		if raddr.String() != remoteAddress {
-			// this is not the packet we are looking for
 			continue
 		}
 		receiveTime = time.Now()
-		//fmt.Printf("Received: % x\n", buf[:numRead])
 		tcp := ParseTCP(buf[:numRead])
-		// Closed port gets RST, open port gets SYN ACK
 		if tcp.Dst == port && (tcp.HasFlag(RST) || (tcp.HasFlag(SYN) && tcp.HasFlag(ACK))) {
 			break
 		}
@@ -127,7 +124,7 @@ func GetInterface() string {
 		return ""
 	}
 	for _, iface := range interfaces {
-		if iface.Name == "lo" {
+		if strings.HasPrefix(iface.Name, "lo") {
 			continue
 		}
 		addrs, err := iface.Addrs()
@@ -136,10 +133,15 @@ func GetInterface() string {
 			log.Println(" %s. %s", iface.Name, err)
 			continue
 		}
-
-		if len(addrs) > 0 {
-			fmt.Printf("returning: %d", iface.Name)
-			return iface.Name
+		var retAddr net.Addr
+		for _, a := range addrs {
+			if !strings.Contains(a.String(), ":") {
+				retAddr = a
+				break
+			}
+		}
+		if retAddr != nil {
+			return retAddr.String()[:strings.Index(retAddr.String(), "/")]
 		}
 	}
 
