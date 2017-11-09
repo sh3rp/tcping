@@ -120,7 +120,7 @@ func WaitForResponse(localAddress, remoteAddress string, port uint16) time.Time 
 func GetInterface() string {
 	interfaces, err := net.Interfaces()
 	if err != nil {
-		log.Println("Error, no interfaces: %s", err)
+		log.Printf("Error, no interfaces: %s", err)
 		return ""
 	}
 	for _, iface := range interfaces {
@@ -130,7 +130,7 @@ func GetInterface() string {
 		addrs, err := iface.Addrs()
 
 		if err != nil {
-			log.Println(" %s. %s", iface.Name, err)
+			log.Printf(" %s. %s", iface.Name, err)
 			continue
 		}
 		var retAddr net.Addr
