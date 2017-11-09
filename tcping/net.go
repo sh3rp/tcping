@@ -130,7 +130,7 @@ func GetInterface() string {
 		addrs, err := iface.Addrs()
 
 		if err != nil {
-			log.Printf(" %s. %s", iface.Name, err)
+			log.Printf(" %s. %s\n", iface.Name, err)
 			continue
 		}
 		var retAddr net.Addr

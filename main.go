@@ -23,6 +23,9 @@ func main() {
 	}
 
 	src := tcping.GetInterface()
+
+	fmt.Printf("Src: %s\n", src)
+
 	for {
 		latency := tcping.GetLatency(src, host, uint16(port))
 		fmt.Printf("%s -> %s (%dms)\n", src, host, latency)
