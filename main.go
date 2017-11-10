@@ -34,7 +34,11 @@ func main() {
 
 	for {
 		latency := probe.GetLatency(uint16(port))
-		fmt.Printf("%s -> %s (%dms)\n", src, host, (int64(latency) / int64(100000)))
+		if latency > 0 {
+			fmt.Printf("%s -> %s (%dms)\n", src, host, (int64(latency) / int64(100000)))
+		} else {
+			fmt.Printf("Timeout")
+		}
 		time.Sleep(time.Second)
 	}
 }
