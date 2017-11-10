@@ -37,7 +37,7 @@ func main() {
 		if latency > 0 {
 			fmt.Printf("%s -> %s (%dms)\n", src, host, (int64(latency) / int64(100000)))
 		} else {
-			fmt.Printf("Timeout")
+			fmt.Printf("Timeout\n")
 		}
 		time.Sleep(time.Second)
 	}
