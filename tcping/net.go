@@ -64,13 +64,14 @@ func SendPing(srcIP, dstIP string, srcPort, dstPort uint16) time.Time {
 		log.Println("Dial: %s\n", err)
 		return time.Now()
 	}
+	defer conn.Close()
 
 	sendTime := time.Now()
 
 	numWrote, err := conn.Write(data)
 
 	if err != nil {
-		log.Printf("Write: %s\n", err)
+		log.Printf("Error writing: %v\n", err)
 		return time.Now()
 	}
 
@@ -78,8 +79,6 @@ func SendPing(srcIP, dstIP string, srcPort, dstPort uint16) time.Time {
 		log.Printf("Error writing %d/%d bytes\n", numWrote, len(data))
 		return time.Now()
 	}
-
-	conn.Close()
 
 	return sendTime
 }
@@ -110,7 +109,7 @@ func WaitForResponse(localAddress, remoteAddress string, port uint16) time.Time 
 		}
 		receiveTime = time.Now()
 		tcp := ParseTCP(buf[:numRead])
-		if tcp.Dst == port && (tcp.HasFlag(RST) || (tcp.HasFlag(SYN) && tcp.HasFlag(ACK))) {
+		if tcp.Dst == port && tcp.HasFlag(RST) {
 			break
 		}
 	}
