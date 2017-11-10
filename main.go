@@ -33,7 +33,7 @@ func main() {
 	}
 
 	for {
-		latency := probe.GetLatency(src, host, uint16(port))
+		latency := probe.GetLatency(uint16(port))
 		fmt.Printf("%s -> %s (%dms)\n", src, host, (int64(latency) / int64(100000)))
 		time.Sleep(time.Second)
 	}
