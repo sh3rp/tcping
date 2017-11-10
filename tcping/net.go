@@ -102,7 +102,7 @@ func (p Probe) SendPing(srcIP, dstIP string, srcPort, dstPort uint16) int64 {
 }
 
 func (p Probe) WaitForResponse(localAddress, remoteAddress string, port uint16) int64 {
-	netaddr, err := net.ResolveIPAddr("ip4", localAddress)
+	netaddr, err := net.ResolveIPAddr("ip4", fmt.Sprintf("%s:0", localAddress))
 	if err != nil {
 		log.Printf("Error (resolve): net.ResolveIPAddr: %s. %s\n", localAddress, netaddr)
 		return -1
