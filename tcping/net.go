@@ -70,12 +70,12 @@ func SendPing(srcIP, dstIP string, srcPort, dstPort uint16) time.Time {
 	numWrote, err := conn.Write(data)
 
 	if err != nil {
-		log.Println("Write: %s\n", err)
+		log.Printf("Write: %s\n", err)
 		return time.Now()
 	}
 
 	if numWrote != len(data) {
-		log.Println("Error writing %d/%d bytes\n", numWrote, len(data))
+		log.Printf("Error writing %d/%d bytes\n", numWrote, len(data))
 		return time.Now()
 	}
 
@@ -87,21 +87,22 @@ func SendPing(srcIP, dstIP string, srcPort, dstPort uint16) time.Time {
 func WaitForResponse(localAddress, remoteAddress string, port uint16) time.Time {
 	netaddr, err := net.ResolveIPAddr("ip4", localAddress)
 	if err != nil {
-		log.Printf("ERROR: net.ResolveIPAddr: %s. %s\n", localAddress, netaddr)
+		log.Printf("Error (resolve): net.ResolveIPAddr: %s. %s\n", localAddress, netaddr)
 		return time.Now()
 	}
 
 	conn, err := net.ListenIP("ip4:tcp", netaddr)
 	if err != nil {
-		log.Println("ListenIP: %s\n", err)
+		log.Printf("Error (listen): %s\n", err)
 		return time.Now()
 	}
+	conn.SetReadDeadline(time.Now().Add(3 * time.Second))
 	var receiveTime time.Time
 	for {
 		buf := make([]byte, 1024)
 		numRead, raddr, err := conn.ReadFrom(buf)
 		if err != nil {
-			log.Println("ReadFrom: %s\n", err)
+			log.Printf("Error (read): %s\n", err)
 			return time.Now()
 		}
 		if raddr.String() != remoteAddress {
@@ -120,7 +121,7 @@ func WaitForResponse(localAddress, remoteAddress string, port uint16) time.Time 
 func GetInterface() string {
 	interfaces, err := net.Interfaces()
 	if err != nil {
-		log.Printf("Error, no interfaces: %s", err)
+		log.Printf("Error, no interfaces: %s\n", err)
 		return ""
 	}
 	for _, iface := range interfaces {

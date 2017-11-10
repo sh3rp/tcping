@@ -28,7 +28,7 @@ func main() {
 
 	for {
 		latency := tcping.GetLatency(src, host, uint16(port))
-		fmt.Printf("%s -> %s (%dms)\n", src, host, latency)
+		fmt.Printf("%s -> %s (%dms)\n", src, host, (int64(latency) / int64(1000000)))
 		time.Sleep(time.Second)
 	}
 }
