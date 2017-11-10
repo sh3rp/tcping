@@ -187,7 +187,7 @@ func to4byte(addr string) [4]byte {
 
 func printTCP(tcp *TCPHeader) {
 	var str string
-	str = fmt.Sprintf("[ SRC: %d ] -> [ DST: %d ]\n", tcp.Src, tcp.Dst)
+	str = fmt.Sprintf("[ SRC: %5d ] [ DST: %5d ]\n", tcp.Src, tcp.Dst)
 	str = str + fmt.Sprintf("[ SEQ: %10d ]\n", tcp.Seq)
 	str = str + fmt.Sprintf("[ ACK: %10d ]\n", tcp.Ack)
 	str = str + fmt.Sprintf("[ ")
@@ -210,8 +210,8 @@ func printTCP(tcp *TCPHeader) {
 		str = str + fmt.Sprintf("FIN ")
 	}
 	str = str + fmt.Sprintf("]")
-	str = str + fmt.Sprintf(" [ WIN: %10d ]\n", tcp.Window)
-	str = str + fmt.Sprintf("[ CSUM: %10d ] [ Urg: %d] \n", tcp.Checksum, tcp.Urgent)
+	str = str + fmt.Sprintf(" [ WIN: %5d ]\n", tcp.Window)
+	str = str + fmt.Sprintf("[ CSUM: %5d ] [ Urg: %5d] \n", tcp.Checksum, tcp.Urgent)
 	for _, o := range tcp.Options {
 		str = str + fmt.Sprintf("[ Option: kind=%d len=%d data=%v ]\n", o.Kind, o.Length, o.Data)
 	}
