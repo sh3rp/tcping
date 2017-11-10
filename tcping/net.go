@@ -42,16 +42,23 @@ func (p Probe) GetLatency(dstPort uint16) int64 {
 	}()
 
 	time.Sleep(1 * time.Millisecond)
-	sendTime := p.SendPing(p.SrcIP, dstIP, 0, dstPort)
+	sendTime := p.SendPing(p.SrcIP, dstIP, dstPort)
 
 	wg.Wait()
 	return receiveTime - sendTime
 }
 
-func (p Probe) SendPing(srcIP, dstIP string, srcPort, dstPort uint16) int64 {
+func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) int64 {
+
+	tmpAddr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:0", srcIP))
+
+	if err != nil {
+		log.Printf("Error (tcp resolve): %v", err)
+		return -1
+	}
 
 	packet := TCPHeader{
-		Src:        srcPort,
+		Src:        uint16(tmpAddr.Port),
 		Dst:        dstPort,
 		Seq:        rand.Uint32(),
 		Ack:        0,
@@ -102,7 +109,8 @@ func (p Probe) SendPing(srcIP, dstIP string, srcPort, dstPort uint16) int64 {
 }
 
 func (p Probe) WaitForResponse(localAddress, remoteAddress string, port uint16) int64 {
-	netaddr, err := net.ResolveIPAddr("ip4", fmt.Sprintf("%s:0", localAddress))
+
+	netaddr, err := net.ResolveIPAddr("ip4", localAddress)
 	if err != nil {
 		log.Printf("Error (resolve): net.ResolveIPAddr: %s. %s\n", localAddress, netaddr)
 		return -1
