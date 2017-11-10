@@ -1,6 +1,7 @@
 package tcping
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"net"
@@ -10,33 +11,44 @@ import (
 	"time"
 )
 
-func GetLatency(srcIP, dstIP string, dstPort uint16) int64 {
+type Probe struct {
+	SrcIP string
+	DstIP string
+	debug bool
+}
+
+func NewProbe(srcIP, dstIP string, debug bool) Probe {
+	return Probe{
+		SrcIP: srcIP,
+		DstIP: dstIP,
+		debug: debug,
+	}
+}
+
+func (p Probe) GetLatency(dstPort uint16) int64 {
 	var wg sync.WaitGroup
 	wg.Add(1)
 	var receiveTime int64
 
-	addrs, err := net.LookupHost(dstIP)
+	addrs, err := net.LookupHost(p.DstIP)
 	if err != nil {
-		log.Fatalf("Error resolving %s. %s\n", dstIP, err)
+		log.Fatalf("Error resolving %s. %s\n", p.DstIP, err)
 	}
-	dstIP = addrs[0]
+	dstIP := addrs[0]
 
 	go func() {
-		receiveTime = WaitForResponse(srcIP, dstIP, dstPort)
+		receiveTime = p.WaitForResponse(p.SrcIP, dstIP, dstPort)
 		wg.Done()
 	}()
 
 	time.Sleep(1 * time.Millisecond)
-	sendTime := SendPing(srcIP, dstIP, 0, dstPort)
+	sendTime := p.SendPing(p.SrcIP, dstIP, 0, dstPort)
 
 	wg.Wait()
 	return receiveTime - sendTime
 }
 
-func SendPing(srcIP, dstIP string, srcPort, dstPort uint16) int64 {
-	if srcPort == 0 {
-		srcPort = getNextLocalPort()
-	}
+func (p Probe) SendPing(srcIP, dstIP string, srcPort, dstPort uint16) int64 {
 
 	packet := TCPHeader{
 		Src:        srcPort,
@@ -80,10 +92,14 @@ func SendPing(srcIP, dstIP string, srcPort, dstPort uint16) int64 {
 		return -1
 	}
 
+	if p.debug {
+		printTCP(&packet)
+	}
+
 	return sendTime
 }
 
-func WaitForResponse(localAddress, remoteAddress string, port uint16) int64 {
+func (p Probe) WaitForResponse(localAddress, remoteAddress string, port uint16) int64 {
 	netaddr, err := net.ResolveIPAddr("ip4", localAddress)
 	if err != nil {
 		log.Printf("Error (resolve): net.ResolveIPAddr: %s. %s\n", localAddress, netaddr)
@@ -110,7 +126,11 @@ func WaitForResponse(localAddress, remoteAddress string, port uint16) int64 {
 		receiveTime = time.Now()
 		tcp := ParseTCP(buf[:numRead])
 
-		if (tcp.Src == port && tcp.HasFlag(RST)) || (tcp.Src == port && tcp.HasFlag(SYN) && tcp.HasFlag(ACK)) {
+		if (tcp.Src == port && tcp.HasFlag(RST)) ||
+			(tcp.Src == port && tcp.HasFlag(SYN) && tcp.HasFlag(ACK)) {
+			if p.debug {
+				printTCP(tcp)
+			}
 			break
 		}
 	}
@@ -161,6 +181,35 @@ func to4byte(addr string) [4]byte {
 	return [4]byte{byte(b0), byte(b1), byte(b2), byte(b3)}
 }
 
-func getNextLocalPort() uint16 {
-	return 0
+func printTCP(tcp *TCPHeader) {
+	var str string
+	str = fmt.Sprintf("[SRC: %d] -> [DST: %d]\n")
+	str = str + fmt.Sprintf("[SEQ: %-10d]\n")
+	str = str + fmt.Sprintf("[ACK: %-10d]\n")
+	str = str + fmt.Sprintf("[ ")
+	if tcp.HasFlag(URG) {
+		str = str + fmt.Sprintf("URG ")
+	}
+	if tcp.HasFlag(ACK) {
+		str = str + fmt.Sprintf("ACK ")
+	}
+	if tcp.HasFlag(PSH) {
+		str = str + fmt.Sprintf("PSH ")
+	}
+	if tcp.HasFlag(RST) {
+		str = str + fmt.Sprintf("RST ")
+	}
+	if tcp.HasFlag(SYN) {
+		str = str + fmt.Sprintf("SYN ")
+	}
+	if tcp.HasFlag(FIN) {
+		str = str + fmt.Sprintf("FIN ")
+	}
+	str = str + fmt.Sprintf("]")
+	str = str + fmt.Sprintf(" [WIN: %d]\n", tcp.Window)
+	str = str + fmt.Sprintf("[CSUM: %d] [Urg: %d]\n", tcp.Checksum, tcp.Urgent)
+	for _, o := range tcp.Options {
+		str = str + fmt.Sprintf("[Option: kind=%d len=%d data=%v]\n", o.Kind, o.Length, o.Data)
+	}
+	fmt.Printf(str)
 }
