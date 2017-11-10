@@ -57,8 +57,15 @@ func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) int64 {
 		return -1
 	}
 
+	l, err := net.ListenTCP("tcp", tmpAddr)
+	if err != nil {
+		log.Printf("Error (tcp listen): %v", err)
+		return -1
+	}
+	defer l.Close()
+
 	packet := TCPHeader{
-		Src:        uint16(tmpAddr.Port),
+		Src:        uint16(l.Addr().(*net.TCPAddr).Port),
 		Dst:        dstPort,
 		Seq:        rand.Uint32(),
 		Ack:        0,
