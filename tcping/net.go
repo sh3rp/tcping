@@ -183,9 +183,9 @@ func to4byte(addr string) [4]byte {
 
 func printTCP(tcp *TCPHeader) {
 	var str string
-	str = fmt.Sprintf("[SRC: %d] -> [DST: %d]\n")
-	str = str + fmt.Sprintf("[SEQ: %-10d]\n")
-	str = str + fmt.Sprintf("[ACK: %-10d]\n")
+	str = fmt.Sprintf("[SRC: %d] -> [DST: %d]\n", tcp.Src, tcp.Dst)
+	str = str + fmt.Sprintf("[SEQ: %-10d]\n", tcp.Seq)
+	str = str + fmt.Sprintf("[ACK: %-10d]\n", tcp.Ack)
 	str = str + fmt.Sprintf("[ ")
 	if tcp.HasFlag(URG) {
 		str = str + fmt.Sprintf("URG ")
