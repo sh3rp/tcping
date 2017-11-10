@@ -10,10 +10,10 @@ import (
 	"time"
 )
 
-func GetLatency(srcIP, dstIP string, dstPort uint16) time.Duration {
+func GetLatency(srcIP, dstIP string, dstPort uint16) int64 {
 	var wg sync.WaitGroup
 	wg.Add(1)
-	var receiveTime time.Time
+	var receiveTime int64
 
 	addrs, err := net.LookupHost(dstIP)
 	if err != nil {
@@ -30,10 +30,10 @@ func GetLatency(srcIP, dstIP string, dstPort uint16) time.Duration {
 	sendTime := SendPing(srcIP, dstIP, 0, dstPort)
 
 	wg.Wait()
-	return receiveTime.Sub(sendTime)
+	return receiveTime - sendTime
 }
 
-func SendPing(srcIP, dstIP string, srcPort, dstPort uint16) time.Time {
+func SendPing(srcIP, dstIP string, srcPort, dstPort uint16) int64 {
 	if srcPort == 0 {
 		srcPort = getNextLocalPort()
 	}
@@ -62,38 +62,38 @@ func SendPing(srcIP, dstIP string, srcPort, dstPort uint16) time.Time {
 	conn, err := net.Dial("ip4:tcp", dstIP)
 	if err != nil {
 		log.Println("Dial: %s\n", err)
-		return time.Now()
+		return -1
 	}
 	defer conn.Close()
 
-	sendTime := time.Now()
+	sendTime := time.Now().UnixNano()
 
 	numWrote, err := conn.Write(data)
 
 	if err != nil {
 		log.Printf("Error writing: %v\n", err)
-		return time.Now()
+		return -1
 	}
 
 	if numWrote != len(data) {
 		log.Printf("Error writing %d/%d bytes\n", numWrote, len(data))
-		return time.Now()
+		return -1
 	}
 
 	return sendTime
 }
 
-func WaitForResponse(localAddress, remoteAddress string, port uint16) time.Time {
+func WaitForResponse(localAddress, remoteAddress string, port uint16) int64 {
 	netaddr, err := net.ResolveIPAddr("ip4", localAddress)
 	if err != nil {
 		log.Printf("Error (resolve): net.ResolveIPAddr: %s. %s\n", localAddress, netaddr)
-		return time.Now()
+		return -1
 	}
 
 	conn, err := net.ListenIP("ip4:tcp", netaddr)
 	if err != nil {
 		log.Printf("Error (listen): %s\n", err)
-		return time.Now()
+		return -1
 	}
 	conn.SetReadDeadline(time.Now().Add(3 * time.Second))
 	var receiveTime time.Time
@@ -102,7 +102,7 @@ func WaitForResponse(localAddress, remoteAddress string, port uint16) time.Time 
 		numRead, raddr, err := conn.ReadFrom(buf)
 		if err != nil {
 			log.Printf("Error (read): %s\n", err)
-			return time.Now()
+			return -1
 		}
 		if raddr.String() != remoteAddress {
 			continue
@@ -114,7 +114,7 @@ func WaitForResponse(localAddress, remoteAddress string, port uint16) time.Time 
 			break
 		}
 	}
-	return receiveTime
+	return receiveTime.UnixNano()
 }
 
 // Grab first interface found and the first IP on it
