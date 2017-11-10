@@ -1,6 +1,7 @@
 package tcping
 
 import (
+	"fmt"
 	"log"
 	"math/rand"
 	"net"
@@ -109,7 +110,10 @@ func WaitForResponse(localAddress, remoteAddress string, port uint16) time.Time 
 		}
 		receiveTime = time.Now()
 		tcp := ParseTCP(buf[:numRead])
-		if tcp.Dst == port && tcp.HasFlag(RST) {
+
+		fmt.Printf("pkt: srcPort=%d dstPort=%d %v\n", tcp.Src, tcp.Dst, tcp)
+
+		if tcp.Src == port && tcp.HasFlag(RST) {
 			break
 		}
 	}
