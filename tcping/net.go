@@ -107,7 +107,7 @@ func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) int64 {
 	}
 
 	if p.debug {
-		fmt.Printf("\n---[   To %-15s ]---\n", dstIP)
+		fmt.Printf("\n---[   To %-14s ]---\n", dstIP)
 		printTCP(&packet)
 		fmt.Printf("\n")
 	}
@@ -146,7 +146,7 @@ func (p Probe) WaitForResponse(localAddress, remoteAddress string, port uint16) 
 		if (tcp.Src == port && tcp.HasFlag(RST)) ||
 			(tcp.Src == port && tcp.HasFlag(SYN) && tcp.HasFlag(ACK)) {
 			if p.debug {
-				fmt.Printf("\n---[ From %-15s ]---\n", remoteAddress)
+				fmt.Printf("\n---[ From %-14s ]---\n", remoteAddress)
 				printTCP(tcp)
 				fmt.Printf("\n")
 			}

@@ -80,7 +80,7 @@ func main() {
 func sendProbe(probe tcping.Probe, port int) {
 	latency := probe.GetLatency(uint16(port))
 	if latency > 0 {
-		fmt.Printf("%s -> %s (%dms)\n",
+		fmt.Printf("%-15s -> %-15s %d ms\n",
 			probe.SrcIP,
 			probe.DstIP,
 			latency/int64(time.Millisecond))
