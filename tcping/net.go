@@ -261,7 +261,7 @@ func printTCP(tcp *TCPHeader) {
 	} else {
 		str = str + "_"
 	}
-	str = str + fmt.Sprintf(" ]")
+	str = str + fmt.Sprintf("]")
 	str = str + fmt.Sprintf(" [ WIN: %5d ]\n", tcp.Window)
 	str = str + fmt.Sprintf("[ SUM: %5d ] [ URG: %5d ] \n", tcp.Checksum, tcp.Urgent)
 	for _, o := range tcp.Options {
