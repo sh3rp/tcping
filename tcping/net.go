@@ -230,28 +230,40 @@ func printTCP(tcp *TCPHeader) {
 	str = fmt.Sprintf("[ SRC: %5d ] [ DST: %5d ]\n", tcp.Src, tcp.Dst)
 	str = str + fmt.Sprintf("[ SEQ: %20d ]\n", tcp.Seq)
 	str = str + fmt.Sprintf("[ ACK: %20d ]\n", tcp.Ack)
-	str = str + fmt.Sprintf("[ ")
+	str = str + fmt.Sprintf("[ FLG: ")
 	if tcp.HasFlag(URG) {
-		str = str + fmt.Sprintf("URG ")
+		str = str + "U"
+	} else {
+		str = str + "_"
 	}
 	if tcp.HasFlag(ACK) {
-		str = str + fmt.Sprintf("ACK ")
+		str = str + "A"
+	} else {
+		str = str + "_"
 	}
 	if tcp.HasFlag(PSH) {
-		str = str + fmt.Sprintf("PSH ")
+		str = str + "P"
+	} else {
+		str = str + "_"
 	}
 	if tcp.HasFlag(RST) {
-		str = str + fmt.Sprintf("RST ")
+		str = str + "R"
+	} else {
+		str = str + "_"
 	}
 	if tcp.HasFlag(SYN) {
-		str = str + fmt.Sprintf("SYN ")
+		str = str + "S"
+	} else {
+		str = str + "_"
 	}
 	if tcp.HasFlag(FIN) {
-		str = str + fmt.Sprintf("FIN ")
+		str = str + "F"
+	} else {
+		str = str + "_"
 	}
-	str = str + fmt.Sprintf("]")
+	str = str + fmt.Sprintf(" ]")
 	str = str + fmt.Sprintf(" [ WIN: %5d ]\n", tcp.Window)
-	str = str + fmt.Sprintf("[ CSUM: %5d ] [ Urg: %5d] \n", tcp.Checksum, tcp.Urgent)
+	str = str + fmt.Sprintf("[ SUM: %5d ] [ URG: %5d ] \n", tcp.Checksum, tcp.Urgent)
 	for _, o := range tcp.Options {
 		str = str + fmt.Sprintf("[ Option: kind=%d len=%d data=%v ]\n", o.Kind, o.Length, o.Data)
 	}
