@@ -57,7 +57,7 @@ func main() {
 	}
 
 	if debug {
-		fmt.Printf("[ Src IP: %s ]\n", src)
+		fmt.Printf("Src IP: %s\n\n", src)
 	}
 
 	if count > 0 {
