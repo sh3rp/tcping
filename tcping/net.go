@@ -87,7 +87,7 @@ func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) int64 {
 
 	conn, err := net.Dial("ip4:tcp", dstIP)
 	if err != nil {
-		log.Println("Dial: %s\n", err)
+		log.Printf("Dial: %s\n", err)
 		return -1
 	}
 	defer conn.Close()
@@ -159,31 +159,54 @@ func (p Probe) WaitForResponse(localAddress, remoteAddress string, port uint16) 
 }
 
 // Grab first interface found and the first IP on it
-func GetInterface() string {
+func GetInterface(intf string) string {
 	interfaces, err := net.Interfaces()
 	if err != nil {
 		log.Printf("Error, no interfaces: %s\n", err)
 		return ""
 	}
-	for _, iface := range interfaces {
-		if strings.HasPrefix(iface.Name, "lo") {
-			continue
-		}
-		addrs, err := iface.Addrs()
+	if intf != "" {
+		for _, i := range interfaces {
+			if i.Name == intf {
+				addrs, err := i.Addrs()
 
-		if err != nil {
-			log.Printf(" %s. %s\n", iface.Name, err)
-			continue
-		}
-		var retAddr net.Addr
-		for _, a := range addrs {
-			if !strings.Contains(a.String(), ":") {
-				retAddr = a
-				break
+				if err != nil {
+					log.Printf(" %s. %s\n", i.Name, err)
+					break
+				}
+				var retAddr net.Addr
+				for _, a := range addrs {
+					if !strings.Contains(a.String(), ":") {
+						retAddr = a
+						break
+					}
+				}
+				if retAddr != nil {
+					return retAddr.String()[:strings.Index(retAddr.String(), "/")]
+				}
 			}
 		}
-		if retAddr != nil {
-			return retAddr.String()[:strings.Index(retAddr.String(), "/")]
+	} else {
+		for _, iface := range interfaces {
+			if strings.HasPrefix(iface.Name, "lo") {
+				continue
+			}
+			addrs, err := iface.Addrs()
+
+			if err != nil {
+				log.Printf(" %s. %s\n", iface.Name, err)
+				continue
+			}
+			var retAddr net.Addr
+			for _, a := range addrs {
+				if !strings.Contains(a.String(), ":") {
+					retAddr = a
+					break
+				}
+			}
+			if retAddr != nil {
+				return retAddr.String()[:strings.Index(retAddr.String(), "/")]
+			}
 		}
 	}
 

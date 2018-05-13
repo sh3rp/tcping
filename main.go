@@ -11,19 +11,20 @@ import (
 	"github.com/sh3rp/tcping/tcping"
 )
 
-var VERSION = "1.0"
+var VERSION = "1.1"
 
 var host string
 var ports string
+var iface string
 var debug bool
 var count int
 var showVersion bool
 
 func main() {
-	flag.StringVar(&host, "h", "", "Host to ping")
 	flag.StringVar(&ports, "p", "80", "Port(s) to use for the TCP connection; for multiple ports, use a comma separated list")
 	flag.BoolVar(&debug, "d", false, "Output packet sent and received")
 	flag.IntVar(&count, "c", 0, "Number of probes to send")
+	flag.StringVar(&iface, "i", "", "Interface to use as the source of the TCP packets")
 	flag.BoolVar(&showVersion, "v", false, "Version info")
 	flag.Parse()
 
@@ -32,12 +33,14 @@ func main() {
 		return
 	}
 
+	host = flag.Arg(0)
+
 	if host == "" {
-		fmt.Printf("Must supply a host with the -h option\n")
+		fmt.Printf("Must supply a host to ping.\n")
 		os.Exit(1)
 	}
 
-	src := tcping.GetInterface()
+	src := tcping.GetInterface(iface)
 
 	probe := tcping.NewProbe(src, host, debug)
 
