@@ -1,6 +1,7 @@
 package tcping
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"math/rand"
@@ -25,10 +26,10 @@ func NewProbe(srcIP, dstIP string, debug bool) Probe {
 	}
 }
 
-func (p Probe) GetLatency(dstPort uint16) int64 {
+func (p Probe) GetLatency(dstPort uint16) (ProbeResult, error) {
 	var wg sync.WaitGroup
 	wg.Add(1)
-	var receiveTime int64
+	var recvProbe ProbePacket
 
 	addrs, err := net.LookupHost(p.DstIP)
 	if err != nil {
@@ -37,30 +38,28 @@ func (p Probe) GetLatency(dstPort uint16) int64 {
 	dstIP := addrs[0]
 
 	go func() {
-		receiveTime = p.WaitForResponse(p.SrcIP, dstIP, dstPort)
+		recvProbe, err = p.WaitForResponse(p.SrcIP, dstIP, dstPort)
 		wg.Done()
 	}()
 
 	time.Sleep(1 * time.Millisecond)
-	sendTime := p.SendPing(p.SrcIP, dstIP, dstPort)
+	sendProbe, err := p.SendPing(p.SrcIP, dstIP, dstPort)
 
 	wg.Wait()
-	return receiveTime - sendTime
+	return ProbeResult{sendProbe, recvProbe}, err
 }
 
-func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) int64 {
+func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) (ProbePacket, error) {
 
 	tmpAddr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:0", srcIP))
 
 	if err != nil {
-		log.Printf("Error (tcp resolve): %v", err)
-		return -1
+		return ProbePacket{}, err
 	}
 
 	l, err := net.ListenTCP("tcp", tmpAddr)
 	if err != nil {
-		log.Printf("Error (tcp listen): %v", err)
-		return -1
+		return ProbePacket{}, err
 	}
 	defer l.Close()
 
@@ -86,10 +85,11 @@ func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) int64 {
 	data = packet.MarshalTCP()
 
 	conn, err := net.Dial("ip4:tcp", dstIP)
+
 	if err != nil {
-		log.Printf("Dial: %s\n", err)
-		return -1
+		return ProbePacket{}, err
 	}
+
 	defer conn.Close()
 
 	sendTime := time.Now().UnixNano()
@@ -97,63 +97,59 @@ func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) int64 {
 	numWrote, err := conn.Write(data)
 
 	if err != nil {
-		log.Printf("Error writing: %v\n", err)
-		return -1
+		return ProbePacket{}, err
 	}
 
 	if numWrote != len(data) {
-		log.Printf("Error writing %d/%d bytes\n", numWrote, len(data))
-		return -1
+		return ProbePacket{}, errors.New(fmt.Sprintf("Error writing %d/%d bytes\n", numWrote, len(data)))
 	}
 
-	if p.debug {
+	/*if p.debug {
 		fmt.Printf("---[   To %-14s ]---\n", dstIP)
 		printTCP(&packet)
 		fmt.Printf("\n")
-	}
+	}*/
 
-	return sendTime
+	return ProbePacket{srcIP, packet, sendTime}, nil
 }
 
-func (p Probe) WaitForResponse(localAddress, remoteAddress string, port uint16) int64 {
+func (p Probe) WaitForResponse(localAddress, remoteAddress string, port uint16) (ProbePacket, error) {
 
 	netaddr, err := net.ResolveIPAddr("ip4", localAddress)
 	if err != nil {
-		log.Printf("Error (resolve): net.ResolveIPAddr: %s. %s\n", localAddress, netaddr)
-		return -1
+		return ProbePacket{}, err
 	}
 
 	conn, err := net.ListenIP("ip4:tcp", netaddr)
 	if err != nil {
-		log.Printf("Error (listen): %s\n", err)
-		return -1
+		return ProbePacket{}, err
 	}
 	conn.SetReadDeadline(time.Now().Add(3 * time.Second))
 	var receiveTime time.Time
+	var tcp *TCPHeader
 	for {
 		buf := make([]byte, 1024)
 		numRead, raddr, err := conn.ReadFrom(buf)
 		if err != nil {
-			log.Printf("Error (read): %s\n", err)
-			return -1
+			return ProbePacket{}, err
 		}
 		if raddr.String() != remoteAddress {
 			continue
 		}
 		receiveTime = time.Now()
-		tcp := ParseTCP(buf[:numRead])
+		tcp = ParseTCP(buf[:numRead])
 
 		if (tcp.Src == port && tcp.HasFlag(RST)) ||
 			(tcp.Src == port && tcp.HasFlag(SYN) && tcp.HasFlag(ACK)) {
-			if p.debug {
+			/*if p.debug {
 				fmt.Printf("---[ From %-14s ]---\n", remoteAddress)
 				printTCP(tcp)
 				fmt.Printf("\n")
-			}
+			}*/
 			break
 		}
 	}
-	return receiveTime.UnixNano()
+	return ProbePacket{remoteAddress, *tcp, receiveTime.UnixNano()}, nil
 }
 
 // Grab first interface found and the first IP on it

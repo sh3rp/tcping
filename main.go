@@ -11,7 +11,7 @@ import (
 	"github.com/sh3rp/tcping/tcping"
 )
 
-var VERSION = "1.1"
+var VERSION = "1.2"
 
 var host string
 var ports string
@@ -63,27 +63,35 @@ func main() {
 	if count > 0 {
 		for i := 0; i < count; i++ {
 			for _, p := range portList {
-				sendProbe(probe, p)
+				sendProbe(probe, p, debug)
 			}
 			time.Sleep(1 * time.Second)
 		}
 	} else {
 		for {
 			for _, p := range portList {
-				sendProbe(probe, p)
+				sendProbe(probe, p, debug)
 			}
 			time.Sleep(1 * time.Second)
 		}
 	}
 }
 
-func sendProbe(probe tcping.Probe, port int) {
-	latency := probe.GetLatency(uint16(port))
-	if latency > 0 {
-		fmt.Printf("%-15s -> %-15s %d ms\n",
-			probe.SrcIP,
-			probe.DstIP,
-			latency/int64(time.Millisecond))
+func sendProbe(probe tcping.Probe, port int, debug bool) {
+	result, err := probe.GetLatency(uint16(port))
+	if err != nil {
+		fmt.Printf("Error: %v\n", err)
+		return
+	}
+	if result.Latency() > 0 {
+		if debug {
+			fmt.Printf("Sent from %-15s to %-15s: %d ms\n",
+				probe.SrcIP,
+				probe.DstIP,
+				result.Latency()/int64(time.Millisecond))
+		} else {
+			fmt.Printf(tcping.FormatResult(result, true))
+		}
 	} else {
 		fmt.Printf("Timeout\n")
 	}
