@@ -63,7 +63,14 @@ func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) (ProbePacket, error
 	}
 	defer l.Close()
 
-	packet := TCPHeader{
+	packet := NewTCPHeader().
+		SrcPort(uint16(l.Addr().(*net.TCPAddr).Port)).
+		DstPort(dstPort).
+		SeqNum(rand.Uint32()).
+		WithFlag(SYN).
+		Win(32676)
+
+	/*packet := TCPHeader{
 		Src:        uint16(l.Addr().(*net.TCPAddr).Port),
 		Dst:        dstPort,
 		Seq:        rand.Uint32(),
@@ -76,7 +83,7 @@ func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) (ProbePacket, error
 		Checksum:   0,
 		Urgent:     0,
 		Options:    []TCPOption{},
-	}
+	}*/
 
 	data := packet.MarshalTCP()
 
@@ -104,13 +111,7 @@ func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) (ProbePacket, error
 		return ProbePacket{}, errors.New(fmt.Sprintf("Error writing %d/%d bytes\n", numWrote, len(data)))
 	}
 
-	/*if p.debug {
-		fmt.Printf("---[   To %-14s ]---\n", dstIP)
-		printTCP(&packet)
-		fmt.Printf("\n")
-	}*/
-
-	return ProbePacket{srcIP, packet, sendTime}, nil
+	return ProbePacket{srcIP, *packet, sendTime}, nil
 }
 
 func (p Probe) WaitForResponse(localAddress, remoteAddress string, port uint16) (ProbePacket, error) {
@@ -141,11 +142,6 @@ func (p Probe) WaitForResponse(localAddress, remoteAddress string, port uint16) 
 
 		if (tcp.Src == port && tcp.HasFlag(RST)) ||
 			(tcp.Src == port && tcp.HasFlag(SYN) && tcp.HasFlag(ACK)) {
-			/*if p.debug {
-				fmt.Printf("---[ From %-14s ]---\n", remoteAddress)
-				printTCP(tcp)
-				fmt.Printf("\n")
-			}*/
 			break
 		}
 	}

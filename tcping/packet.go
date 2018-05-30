@@ -35,6 +35,40 @@ type TCPOption struct {
 	Data   []byte
 }
 
+func NewTCPHeader() *TCPHeader {
+	return &TCPHeader{}
+}
+
+func (tcp *TCPHeader) SrcPort(port uint16) *TCPHeader {
+	tcp.Src = port
+	return tcp
+}
+
+func (tcp *TCPHeader) DstPort(port uint16) *TCPHeader {
+	tcp.Dst = port
+	return tcp
+}
+
+func (tcp *TCPHeader) SeqNum(num uint32) *TCPHeader {
+	tcp.Seq = num
+	return tcp
+}
+
+func (tcp *TCPHeader) Win(window uint16) *TCPHeader {
+	tcp.Window = window
+	return tcp
+}
+
+func (tcp *TCPHeader) WithOption(option TCPOption) *TCPHeader {
+	tcp.Options = append(tcp.Options, option)
+	return tcp
+}
+
+func (tcp *TCPHeader) WithFlag(flagBit byte) *TCPHeader {
+	tcp.Ctrl = tcp.Ctrl | flagBit
+	return tcp
+}
+
 func ParseTCP(data []byte) *TCPHeader {
 	var tcp TCPHeader
 	r := bytes.NewReader(data)
@@ -67,6 +101,12 @@ func (tcp *TCPHeader) MarshalTCP() []byte {
 	binary.Write(buf, binary.BigEndian, tcp.Dst)
 	binary.Write(buf, binary.BigEndian, tcp.Seq)
 	binary.Write(buf, binary.BigEndian, tcp.Ack)
+
+	offset := 5
+	for _, o := range tcp.Options {
+		offset += 2 + len(o.Data)
+	}
+	tcp.DataOffset = uint8(offset)
 
 	var mix uint16
 	mix = uint16(tcp.DataOffset)<<12 |
