@@ -20,21 +20,23 @@ func FormatResult(result ProbeResult, useColor bool) string {
 	var str string
 	txBumperSpace := (27 - len(result.TxPacket.IP)) / 2
 	rxBumperSpace := (27 - len(result.RxPacket.IP)) / 2
-	msLabel := fmt.Sprintf("%dms", result.Latency()/int64(time.Millisecond))
+	msLabel := fmt.Sprintf("%d ms", result.Latency()/int64(time.Millisecond))
 
+	str = str + strings.Repeat(" ", ((27+27)+len(msLabel))/2) + msLabel + "\n"
 	fmtStr := "%s" +
 		strings.Repeat(" ", txBumperSpace) +
 		"%s" +
-		strings.Repeat(" ", txBumperSpace-(len(msLabel)/2)) +
-		"%s" +
-		strings.Repeat(" ", rxBumperSpace+(len(msLabel)/2)) +
+		strings.Repeat(" ", txBumperSpace) +
+		"%s     %s" +
+		strings.Repeat(" ", rxBumperSpace) +
 		"%s" +
 		strings.Repeat(" ", rxBumperSpace) +
 		"%s\n"
 	str = str + fmt.Sprintf(fmtStr,
 		Open(),
 		rgbterm.FgString(result.TxPacket.IP, 231, 127, 255),
-		rgbterm.FgString(msLabel, 127, 255, 218),
+		Close(),
+		Open(),
 		rgbterm.FgString(result.RxPacket.IP, 231, 127, 255),
 		Close())
 	str = str + fmt.Sprintf("%s %s %s %s %s %s %s %s     %s %s %s %s %s %s %s %s\n",
