@@ -16,6 +16,7 @@ var VERSION = "1.2"
 var host string
 var ports string
 var iface string
+var timeout int64
 var debug bool
 var count int
 var showVersion bool
@@ -25,6 +26,7 @@ func main() {
 	flag.BoolVar(&debug, "d", false, "Debug output packet sent and received")
 	flag.IntVar(&count, "c", 0, "Number of probes to send")
 	flag.StringVar(&iface, "i", "", "Interface to use as the source of the TCP packets")
+	flag.Int64Var(&timeout, "t", 3000, "Time in milliseconds to wait for probe to return")
 	flag.BoolVar(&showVersion, "v", false, "Version info")
 	flag.Parse()
 
@@ -42,7 +44,7 @@ func main() {
 
 	src := tcping.GetInterface(iface)
 
-	probe := tcping.NewProbe(src, host, debug)
+	probe := tcping.NewProbe(src, host, timeout, debug)
 
 	strPorts := strings.Split(ports, ",")
 

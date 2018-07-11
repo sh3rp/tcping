@@ -13,16 +13,18 @@ import (
 )
 
 type Probe struct {
-	SrcIP string
-	DstIP string
-	debug bool
+	SrcIP   string
+	DstIP   string
+	Timeout int64 // in milliseconds
+	debug   bool
 }
 
-func NewProbe(srcIP, dstIP string, debug bool) Probe {
+func NewProbe(srcIP, dstIP string, timeout int64, debug bool) Probe {
 	return Probe{
-		SrcIP: srcIP,
-		DstIP: dstIP,
-		debug: debug,
+		SrcIP:   srcIP,
+		DstIP:   dstIP,
+		Timeout: timeout,
+		debug:   debug,
 	}
 }
 
@@ -125,7 +127,7 @@ func (p Probe) WaitForResponse(localAddress, remoteAddress string, port uint16) 
 	if err != nil {
 		return ProbePacket{}, err
 	}
-	conn.SetReadDeadline(time.Now().Add(3 * time.Second))
+	conn.SetReadDeadline(time.Now().Add(time.Duration(p.Timeout) * time.Millisecond))
 	var receiveTime time.Time
 	var tcp *TCPHeader
 	for {
