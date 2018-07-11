@@ -11,7 +11,7 @@ import (
 	"github.com/sh3rp/tcping/tcping"
 )
 
-var VERSION = "1.2"
+var VERSION = "1.3"
 
 var host string
 var ports string
