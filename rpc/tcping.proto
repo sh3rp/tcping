@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package rpc;
+
+service TcpingService {
+    rpc CreateProbe(Probe) returns (Response) {}
+    rpc ScheduleProbe(ProbeSchedule) returns (Response) {}
+    rpc UnscheduleProbe(ProbeSchedule) returns (Response) {}
+    rpc DeleteProbeSchedule(ProbeSchedule) returns (Response) {}
+
+    rpc GetProbeResults(ProbeQuery) returns (ProbeQueryResult) {}
+}
+
+message Probe {}
+
+message Response {}
+
+message ProbeQuery {}
+
+message ProbeQueryResults {}
