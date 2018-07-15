@@ -8,6 +8,8 @@ service TcpingService {
     rpc UnscheduleProbe(ProbeSchedule) returns (Empty) {}
 
     rpc GetProbeResults(ProbeQuery) returns (ProbeQueryResults) {}
+
+    rpc StreamProbeResults(Probe) returns (stream ProbeQueryResult) {}
 }
 
 message Empty{}
@@ -16,7 +18,7 @@ message Probe {
     string id = 1;
     string label = 2;
     string host = 3;
-    uint16 port = 4;
+    int32 port = 4;
 }
 
 message ProbeSchedule{
@@ -31,12 +33,10 @@ message ProbeQuery {
 }
 
 message ProbeQueryResult {
-    string probeId = 1;
-    string host = 2;
-    uint16 port = 3;
-    int64 latency = 3;
+    Probe probe = 1;
+    int64 latency = 2;
 }
 
 message ProbeQueryResults {
-    repeated ProbeyQuerResult results = 1;
+    repeated ProbeQueryResult results = 1;
 }
