@@ -1,14 +1,16 @@
 all: dep install
 
+build: dep protos compile
+
 dep:
 	dep ensure
 
 compile:
-	go build cmd/tcping/tcping.go
+	go build -o ping cmd/tcping/tcping.go
 
 protos:
 	go get -u github.com/golang/protobuf/protoc-gen-go
-	protoc -I=rpc --go_out=grpc:rpc rpc/tcping.proto 
+	protoc -I=rpc --go_out=plugins=grpc:rpc rpc/tcping.proto 
 
 install:
 	go install cmd/tcping/tcping.go

@@ -7,6 +7,11 @@ import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
 
+import (
+	context "golang.org/x/net/context"
+	grpc "google.golang.org/grpc"
+)
+
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
 var _ = fmt.Errorf
@@ -301,6 +306,238 @@ func init() {
 	proto.RegisterType((*ProbeQuery)(nil), "rpc.ProbeQuery")
 	proto.RegisterType((*ProbeQueryResult)(nil), "rpc.ProbeQueryResult")
 	proto.RegisterType((*ProbeQueryResults)(nil), "rpc.ProbeQueryResults")
+}
+
+// Reference imports to suppress errors if they are not otherwise used.
+var _ context.Context
+var _ grpc.ClientConn
+
+// This is a compile-time assertion to ensure that this generated file
+// is compatible with the grpc package it is being compiled against.
+const _ = grpc.SupportPackageIsVersion4
+
+// TcpingServiceClient is the client API for TcpingService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://godoc.org/google.golang.org/grpc#ClientConn.NewStream.
+type TcpingServiceClient interface {
+	CreateProbe(ctx context.Context, in *Probe, opts ...grpc.CallOption) (*Probe, error)
+	ScheduleProbe(ctx context.Context, in *ProbeSchedule, opts ...grpc.CallOption) (*ProbeSchedule, error)
+	UnscheduleProbe(ctx context.Context, in *ProbeSchedule, opts ...grpc.CallOption) (*Empty, error)
+	GetProbeResults(ctx context.Context, in *ProbeQuery, opts ...grpc.CallOption) (*ProbeQueryResults, error)
+	StreamProbeResults(ctx context.Context, in *Probe, opts ...grpc.CallOption) (TcpingService_StreamProbeResultsClient, error)
+}
+
+type tcpingServiceClient struct {
+	cc *grpc.ClientConn
+}
+
+func NewTcpingServiceClient(cc *grpc.ClientConn) TcpingServiceClient {
+	return &tcpingServiceClient{cc}
+}
+
+func (c *tcpingServiceClient) CreateProbe(ctx context.Context, in *Probe, opts ...grpc.CallOption) (*Probe, error) {
+	out := new(Probe)
+	err := c.cc.Invoke(ctx, "/rpc.TcpingService/CreateProbe", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tcpingServiceClient) ScheduleProbe(ctx context.Context, in *ProbeSchedule, opts ...grpc.CallOption) (*ProbeSchedule, error) {
+	out := new(ProbeSchedule)
+	err := c.cc.Invoke(ctx, "/rpc.TcpingService/ScheduleProbe", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tcpingServiceClient) UnscheduleProbe(ctx context.Context, in *ProbeSchedule, opts ...grpc.CallOption) (*Empty, error) {
+	out := new(Empty)
+	err := c.cc.Invoke(ctx, "/rpc.TcpingService/UnscheduleProbe", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tcpingServiceClient) GetProbeResults(ctx context.Context, in *ProbeQuery, opts ...grpc.CallOption) (*ProbeQueryResults, error) {
+	out := new(ProbeQueryResults)
+	err := c.cc.Invoke(ctx, "/rpc.TcpingService/GetProbeResults", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *tcpingServiceClient) StreamProbeResults(ctx context.Context, in *Probe, opts ...grpc.CallOption) (TcpingService_StreamProbeResultsClient, error) {
+	stream, err := c.cc.NewStream(ctx, &_TcpingService_serviceDesc.Streams[0], "/rpc.TcpingService/StreamProbeResults", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &tcpingServiceStreamProbeResultsClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type TcpingService_StreamProbeResultsClient interface {
+	Recv() (*ProbeQueryResult, error)
+	grpc.ClientStream
+}
+
+type tcpingServiceStreamProbeResultsClient struct {
+	grpc.ClientStream
+}
+
+func (x *tcpingServiceStreamProbeResultsClient) Recv() (*ProbeQueryResult, error) {
+	m := new(ProbeQueryResult)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+// TcpingServiceServer is the server API for TcpingService service.
+type TcpingServiceServer interface {
+	CreateProbe(context.Context, *Probe) (*Probe, error)
+	ScheduleProbe(context.Context, *ProbeSchedule) (*ProbeSchedule, error)
+	UnscheduleProbe(context.Context, *ProbeSchedule) (*Empty, error)
+	GetProbeResults(context.Context, *ProbeQuery) (*ProbeQueryResults, error)
+	StreamProbeResults(*Probe, TcpingService_StreamProbeResultsServer) error
+}
+
+func RegisterTcpingServiceServer(s *grpc.Server, srv TcpingServiceServer) {
+	s.RegisterService(&_TcpingService_serviceDesc, srv)
+}
+
+func _TcpingService_CreateProbe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Probe)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TcpingServiceServer).CreateProbe(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpc.TcpingService/CreateProbe",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TcpingServiceServer).CreateProbe(ctx, req.(*Probe))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TcpingService_ScheduleProbe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProbeSchedule)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TcpingServiceServer).ScheduleProbe(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpc.TcpingService/ScheduleProbe",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TcpingServiceServer).ScheduleProbe(ctx, req.(*ProbeSchedule))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TcpingService_UnscheduleProbe_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProbeSchedule)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TcpingServiceServer).UnscheduleProbe(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpc.TcpingService/UnscheduleProbe",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TcpingServiceServer).UnscheduleProbe(ctx, req.(*ProbeSchedule))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TcpingService_GetProbeResults_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProbeQuery)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(TcpingServiceServer).GetProbeResults(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpc.TcpingService/GetProbeResults",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(TcpingServiceServer).GetProbeResults(ctx, req.(*ProbeQuery))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _TcpingService_StreamProbeResults_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(Probe)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(TcpingServiceServer).StreamProbeResults(m, &tcpingServiceStreamProbeResultsServer{stream})
+}
+
+type TcpingService_StreamProbeResultsServer interface {
+	Send(*ProbeQueryResult) error
+	grpc.ServerStream
+}
+
+type tcpingServiceStreamProbeResultsServer struct {
+	grpc.ServerStream
+}
+
+func (x *tcpingServiceStreamProbeResultsServer) Send(m *ProbeQueryResult) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+var _TcpingService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "rpc.TcpingService",
+	HandlerType: (*TcpingServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "CreateProbe",
+			Handler:    _TcpingService_CreateProbe_Handler,
+		},
+		{
+			MethodName: "ScheduleProbe",
+			Handler:    _TcpingService_ScheduleProbe_Handler,
+		},
+		{
+			MethodName: "UnscheduleProbe",
+			Handler:    _TcpingService_UnscheduleProbe_Handler,
+		},
+		{
+			MethodName: "GetProbeResults",
+			Handler:    _TcpingService_GetProbeResults_Handler,
+		},
+	},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "StreamProbeResults",
+			Handler:       _TcpingService_StreamProbeResults_Handler,
+			ServerStreams: true,
+		},
+	},
+	Metadata: "tcping.proto",
 }
 
 func init() { proto.RegisterFile("tcping.proto", fileDescriptor_tcping_678b7ef5c6e9fe84) }
