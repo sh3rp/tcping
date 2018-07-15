@@ -7,15 +7,36 @@ service TcpingService {
     rpc ScheduleProbe(ProbeSchedule) returns (ProbeSchedule) {}
     rpc UnscheduleProbe(ProbeSchedule) returns (Empty) {}
 
-    rpc GetProbeResults(ProbeQuery) returns (ProbeQueryResult) {}
+    rpc GetProbeResults(ProbeQuery) returns (ProbeQueryResults) {}
 }
 
 message Empty{}
 
-message Probe {}
+message Probe {
+    string id = 1;
+    string label = 2;
+    string host = 3;
+    uint16 port = 4;
+}
 
-message ProbeQuery {}
+message ProbeSchedule{
+    Probe probe = 1;
+    string schedule = 2;
+}
 
-message ProbeQueryResult {}
+message ProbeQuery {
+    Probe probe = 1;
+    int64 startTime = 2;
+    int64 endTime = 3;
+}
 
-message ProbeSchedule{}
+message ProbeQueryResult {
+    string probeId = 1;
+    string host = 2;
+    uint16 port = 3;
+    int64 latency = 3;
+}
+
+message ProbeQueryResults {
+    repeated ProbeyQuerResult results = 1;
+}
