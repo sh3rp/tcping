@@ -3,18 +3,19 @@ syntax = "proto3";
 package rpc;
 
 service TcpingService {
-    rpc CreateProbe(Probe) returns (Response) {}
-    rpc ScheduleProbe(ProbeSchedule) returns (Response) {}
-    rpc UnscheduleProbe(ProbeSchedule) returns (Response) {}
-    rpc DeleteProbeSchedule(ProbeSchedule) returns (Response) {}
+    rpc CreateProbe(Probe) returns (Probe) {}
+    rpc ScheduleProbe(ProbeSchedule) returns (ProbeSchedule) {}
+    rpc UnscheduleProbe(ProbeSchedule) returns (Empty) {}
 
     rpc GetProbeResults(ProbeQuery) returns (ProbeQueryResult) {}
 }
 
-message Probe {}
+message Empty{}
 
-message Response {}
+message Probe {}
 
 message ProbeQuery {}
 
-message ProbeQueryResults {}
+message ProbeQueryResult {}
+
+message ProbeSchedule{}
