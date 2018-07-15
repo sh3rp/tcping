@@ -4,8 +4,6 @@ import (
 	"flag"
 	"fmt"
 	"os"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/sh3rp/tcping/tcping"
@@ -14,7 +12,7 @@ import (
 var VERSION = "1.3"
 
 var host string
-var ports string
+var port int
 var iface string
 var timeout int64
 var debug bool
@@ -22,7 +20,7 @@ var count int
 var showVersion bool
 
 func main() {
-	flag.StringVar(&ports, "p", "80", "Port(s) to use for the TCP connection; for multiple ports, use a comma separated list")
+	flag.IntVar(&port, "p", 80, "Port to use for the TCP connection")
 	flag.BoolVar(&debug, "d", false, "Debug output packet sent and received")
 	flag.IntVar(&count, "c", 0, "Number of probes to send")
 	flag.StringVar(&iface, "i", "", "Interface to use as the source of the TCP packets")
@@ -44,19 +42,7 @@ func main() {
 
 	src := tcping.GetInterface(iface)
 
-	probe := tcping.NewProbe(src, host, timeout, debug)
-
-	strPorts := strings.Split(ports, ",")
-
-	var portList []int
-
-	for _, p := range strPorts {
-		prt, err := strconv.Atoi(p)
-
-		if err == nil {
-			portList = append(portList, prt)
-		}
-	}
+	probe := tcping.NewProbe(src, host, timeout, uint16(port), debug)
 
 	if debug {
 		fmt.Printf("Src IP: %s\n\n", src)
@@ -64,23 +50,19 @@ func main() {
 
 	if count > 0 {
 		for i := 0; i < count; i++ {
-			for _, p := range portList {
-				sendProbe(probe, p, debug)
-			}
+			sendProbe(probe, debug)
 			time.Sleep(1 * time.Second)
 		}
 	} else {
 		for {
-			for _, p := range portList {
-				sendProbe(probe, p, debug)
-			}
+			sendProbe(probe, debug)
 			time.Sleep(1 * time.Second)
 		}
 	}
 }
 
-func sendProbe(probe tcping.Probe, port int, debug bool) {
-	result, err := probe.GetLatency(uint16(port))
+func sendProbe(probe tcping.Probe, debug bool) {
+	result, err := probe.GetLatency()
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
