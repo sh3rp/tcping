@@ -4,8 +4,11 @@ package rpc;
 
 service TcpingService {
     rpc CreateProbe(Probe) returns (Probe) {}
+    rpc GetProbes(Empty) returns (Probes) {}
+
     rpc ScheduleProbe(ProbeSchedule) returns (ProbeSchedule) {}
     rpc UnscheduleProbe(ProbeSchedule) returns (Empty) {}
+    rpc GetSchedules(Empty) returns (ProbeSchedules) {}
 
     rpc GetProbeResults(ProbeQuery) returns (ProbeQueryResults) {}
 
@@ -21,10 +24,18 @@ message Probe {
     int32 port = 4;
 }
 
+message Probes {
+    repeated Probe probes = 1;
+}
+
 message ProbeSchedule{
     string id = 1;
     Probe probe = 2;
     string schedule = 3;
+}
+
+message ProbeSchedules {
+    repeated ProbeSchedule schedules = 1;
 }
 
 message ProbeQuery {

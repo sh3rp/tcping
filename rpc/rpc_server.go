@@ -1,7 +1,6 @@
 package rpc
 
 import (
-	"errors"
 	"sync"
 
 	"github.com/google/uuid"
@@ -38,15 +37,14 @@ func (server TcpingdServer) CreateProbe(ctx context.Context, probe *Probe) (*Pro
 
 func (server TcpingdServer) ScheduleProbe(ctx context.Context, schedule *ProbeSchedule) (*ProbeSchedule, error) {
 	if schedule.Schedule == "" {
-		return nil, errors.New("Cannot provide an empty schedule")
+		return nil, E_EMPTY_SCHEDULE
 	}
 
 	if schedule.Id == "" {
-		if schedule.Probe == nil {
-			return nil, errors.New("Probe id must be provided to schedule a probe")
-		} else if schedule.Probe.Id == "" {
-			return nil, errors.New("Empty probe id supplied")
+		if schedule.Probe == nil || schedule.Probe.Id == "" {
+			return nil, E_PROBE_ID
 		}
+
 		probe, probeExists := server.probes[schedule.Probe.Id]
 		if probeExists {
 			entryId, err := server.scheduler.AddFunc(schedule.Schedule, func() {
@@ -58,7 +56,7 @@ func (server TcpingdServer) ScheduleProbe(ctx context.Context, schedule *ProbeSc
 			}
 			schedule.Id = string(entryId)
 		} else {
-			return nil, errors.New("Probe does not exists")
+			return nil, E_NO_PROBE
 		}
 	} else {
 		_, probeExists := server.probes[schedule.Probe.Id]
@@ -81,4 +79,12 @@ func (server TcpingdServer) GetProbeResults(ctx context.Context, query *ProbeQue
 
 func (server TcpingdServer) StreamProbeResults(probe *Probe, streamServer TcpingService_StreamProbeResultsServer) error {
 	panic("not implemented")
+}
+
+func (server TcpingdServer) GetProbes(ctx context.Context, e *Empty) (*Probes, error) {
+	return nil, nil
+}
+
+func (server TcpingdServer) GetSchedules(ctx context.Context, e *Empty) (*ProbeSchedules, error) {
+	return nil, nil
 }
