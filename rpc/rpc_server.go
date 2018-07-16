@@ -1,6 +1,7 @@
 package rpc
 
 import (
+	"errors"
 	"sync"
 
 	"github.com/google/uuid"
@@ -36,30 +37,35 @@ func (server TcpingdServer) CreateProbe(ctx context.Context, probe *Probe) (*Pro
 }
 
 func (server TcpingdServer) ScheduleProbe(ctx context.Context, schedule *ProbeSchedule) (*ProbeSchedule, error) {
-	if schedule.Schedule != "" {
-		// check if schedule id was supplied and modify it if so
-		// otherwise add the new schedule
-		if schedule.Id == "" {
-			probe, probeExists := server.probes[schedule.Probe.Id]
-			if schedule.Probe != nil && schedule.Probe.Id != "" && probeExists {
-				entryId, err := server.scheduler.AddFunc(schedule.Schedule, func() {
-					result, err := probe.GetLatency()
-					server.resultQueue <- probeResult{result, err}
-				})
-				if err != nil {
-					return nil, err
-				}
-				schedule.Id = string(entryId)
-			} else {
+	if schedule.Schedule == "" {
+		return nil, errors.New("Cannot provide an empty schedule")
+	}
 
+	if schedule.Id == "" {
+		if schedule.Probe == nil {
+			return nil, errors.New("Probe id must be provided to schedule a probe")
+		} else if schedule.Probe.Id == "" {
+			return nil, errors.New("Empty probe id supplied")
+		}
+		probe, probeExists := server.probes[schedule.Probe.Id]
+		if probeExists {
+			entryId, err := server.scheduler.AddFunc(schedule.Schedule, func() {
+				result, err := probe.GetLatency()
+				server.resultQueue <- probeResult{result, err}
+			})
+			if err != nil {
+				return nil, err
 			}
+			schedule.Id = string(entryId)
 		} else {
-			_, probeExists := server.probes[schedule.Probe.Id]
-			if schedule.Probe != nil && schedule.Probe.Id != "" && probeExists {
-				// delete schedule then reschedule
-			} else {
+			return nil, errors.New("Probe does not exists")
+		}
+	} else {
+		_, probeExists := server.probes[schedule.Probe.Id]
+		if schedule.Probe != nil && schedule.Probe.Id != "" && probeExists {
+			// delete schedule then reschedule
+		} else {
 
-			}
 		}
 	}
 	return schedule, nil
