@@ -22,8 +22,9 @@ message Probe {
 }
 
 message ProbeSchedule{
-    Probe probe = 1;
-    string schedule = 2;
+    string id = 1;
+    Probe probe = 2;
+    string schedule = 3;
 }
 
 message ProbeQuery {
@@ -34,7 +35,8 @@ message ProbeQuery {
 
 message ProbeQueryResult {
     Probe probe = 1;
-    int64 latency = 2;
+    string error = 2;
+    int64 latency = 3;
 }
 
 message ProbeQueryResults {
