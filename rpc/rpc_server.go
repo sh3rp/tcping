@@ -49,6 +49,7 @@ func (server TcpingdServer) ScheduleProbe(ctx context.Context, schedule *ProbeSc
 		if probeExists {
 			entryId, err := server.scheduler.AddFunc(schedule.Schedule, func() {
 				result, err := probe.GetLatency()
+				LOGGER.Info("Latency: %+v", result)
 				server.resultQueue <- probeResult{result, err}
 			})
 			if err != nil {
@@ -70,15 +71,15 @@ func (server TcpingdServer) ScheduleProbe(ctx context.Context, schedule *ProbeSc
 }
 
 func (server TcpingdServer) UnscheduleProbe(ctx context.Context, schedule *ProbeSchedule) (*Empty, error) {
-	panic("not implemented")
+	return nil, nil
 }
 
 func (server TcpingdServer) GetProbeResults(ctx context.Context, query *ProbeQuery) (*ProbeQueryResults, error) {
-	panic("not implemented")
+	return nil, nil
 }
 
 func (server TcpingdServer) StreamProbeResults(probe *Probe, streamServer TcpingService_StreamProbeResultsServer) error {
-	panic("not implemented")
+	return nil
 }
 
 func (server TcpingdServer) GetProbes(ctx context.Context, e *Empty) (*Probes, error) {
