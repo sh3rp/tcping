@@ -9,6 +9,8 @@ protos:
 
 install:
 	go install cmd/tcping/tcping.go
+	go install cmd/tcpingd/tcpingd.go
+	go install cmd/tpctl/tpctl.go
 	sudo setcap cap_net_raw+ep $(GOPATH)/bin/tcping
 
 .PHONY: install protos dep
