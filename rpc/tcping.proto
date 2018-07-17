@@ -47,7 +47,8 @@ message ProbeQuery {
 message ProbeQueryResult {
     Probe probe = 1;
     string error = 2;
-    int64 latency = 3;
+    int64 timestamp = 3;
+    int64 latency = 4;
 }
 
 message ProbeQueryResults {
