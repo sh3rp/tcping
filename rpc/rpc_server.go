@@ -83,7 +83,19 @@ func (server TcpingdServer) StreamProbeResults(probe *Probe, streamServer Tcping
 }
 
 func (server TcpingdServer) GetProbes(ctx context.Context, e *Empty) (*Probes, error) {
-	return nil, nil
+	var probes []*Probe
+
+	server.probesLock.Lock()
+	for k, v := range server.probes {
+		probes = append(probes, &Probe{
+			Id:    k,
+			Label: "",
+			Host:  v.DstIP,
+			Port:  int32(v.DstPort),
+		})
+	}
+	defer server.probesLock.Unlock()
+	return &Probes{Probes: probes}, nil
 }
 
 func (server TcpingdServer) GetSchedules(ctx context.Context, e *Empty) (*ProbeSchedules, error) {
