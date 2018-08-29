@@ -41,16 +41,28 @@ func (p Probe) GetLatency() (ProbeResult, error) {
 	}
 	dstIP := addrs[0]
 
+	var startWg sync.WaitGroup
+	startWg.Add(1)
+
 	go func() {
+		startWg.Done()
 		recvProbe, err = p.WaitForResponse(p.SrcIP, dstIP, p.DstPort)
 		wg.Done()
 	}()
 
-	time.Sleep(1 * time.Millisecond)
+	startWg.Wait()
+
 	sendProbe, err := p.SendPing(p.SrcIP, dstIP, p.DstPort)
 
 	wg.Wait()
-	return ProbeResult{sendProbe, recvProbe}, err
+
+	var isAlive bool
+
+	if (recvProbe.Mark - sendProbe.Mark) < p.Timeout {
+		isAlive = true
+	}
+
+	return ProbeResult{sendProbe, recvProbe, isAlive}, err
 }
 
 func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) (ProbePacket, error) {

@@ -67,7 +67,7 @@ func sendProbe(probe tcping.Probe, debug bool) {
 		fmt.Printf("Error: %v\n", err)
 		return
 	}
-	if result.Latency() > 0 {
+	if result.IsAlive {
 		if debug {
 			fmt.Printf(tcping.FormatResult(result, true))
 		} else {
@@ -77,6 +77,9 @@ func sendProbe(probe tcping.Probe, debug bool) {
 				result.Latency()/int64(time.Millisecond))
 		}
 	} else {
-		fmt.Printf("Timeout\n")
+		fmt.Printf("Sent from %-15s to %-15s: timeout (%d ms)\n",
+			probe.SrcIP,
+			probe.DstIP,
+			probe.Timeout)
 	}
 }
