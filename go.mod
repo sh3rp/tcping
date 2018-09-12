@@ -4,7 +4,7 @@ require (
 	github.com/aybabtme/rgbterm v0.0.0-20170906152045-cc83f3b3ce59
 	github.com/davecgh/go-spew v1.1.0 // indirect
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b // indirect
-	github.com/golang/protobuf v1.1.0
+	github.com/golang/protobuf v1.2.0
 	github.com/google/uuid v0.0.0-20161128191214-064e2069ce9c
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/zerolog v1.8.0

@@ -9,7 +9,7 @@ import (
 	"github.com/sh3rp/tcping/tcping"
 )
 
-var VERSION = "1.3"
+var VERSION = "1.3.1"
 
 var host string
 var port int
