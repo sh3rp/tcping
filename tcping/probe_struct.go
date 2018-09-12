@@ -9,6 +9,7 @@ type ProbePacket struct {
 type ProbeResult struct {
 	TxPacket ProbePacket
 	RxPacket ProbePacket
+	IsAlive  bool
 }
 
 func (result ProbeResult) Latency() int64 {
