@@ -28,35 +28,32 @@ func NewProbe(srcIp string, timeout int64, debug bool) Probe {
 	}
 }
 
-func (p Probe) GetLatency(dstIp string, dstPort uint16) (ProbeResult, error) {
-	var recvProbe ProbePacket
-
+func (p Probe) GetLatency(dstIp string, dstPort uint16) (int64, error) {
 	addrs, err := net.LookupHost(dstIp)
 	if err != nil {
 		log.Fatalf("Error resolving %s. %s\n", dstIp, err)
 	}
 	dstIp = addrs[0]
-
-	wg := sync.WaitGroup{}
+	var mark int64
+	wg := &sync.WaitGroup{}
 	wg.Add(1)
-	p.watcher.WatchFor(dstIp,dstPort,func(tcp *TCPHeader) {
-		if (tcp.HasFlag(RST) || (tcp.HasFlag(SYN) && tcp.HasFlag(ACK))) {
+	p.watcher.WatchFor(dstIp, dstPort, func(tcp *TCPHeader) {
+		if tcp.HasFlag(RST) || (tcp.HasFlag(SYN) && tcp.HasFlag(ACK)) {
+			mark = time.Now().UnixNano()
 			wg.Done()
 		}
 	})
-	defer p.watcher.StopWatchFor(dstIp,dstPort)
+	defer p.watcher.StopWatchFor(dstIp, dstPort)
 
 	sendProbe, err := p.SendPing(p.SrcIp, dstIp, dstPort)
 
-	wg.Wait()
+	isAlive := wait(wg, time.Duration(p.Timeout)*time.Millisecond)
 
-	var isAlive bool
-
-	if (recvProbe.Mark - sendProbe.Mark) < p.Timeout {
-		isAlive = true
+	if isAlive {
+		return (mark - sendProbe.Mark), nil
+	} else {
+		return 0, errors.New("TCPing to host timeout")
 	}
-
-	return ProbeResult{sendProbe, recvProbe, isAlive}, err
 }
 
 func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) (ProbePacket, error) {
@@ -122,40 +119,6 @@ func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) (ProbePacket, error
 	}
 
 	return ProbePacket{srcIP, *packet, sendTime}, nil
-}
-
-func (p Probe) WaitForResponse(localAddress, remoteAddress string, port uint16) (ProbePacket, error) {
-
-	netaddr, err := net.ResolveIPAddr("ip4", localAddress)
-	if err != nil {
-		return ProbePacket{}, err
-	}
-
-	conn, err := net.ListenIP("ip4:tcp", netaddr)
-	if err != nil {
-		return ProbePacket{}, err
-	}
-	conn.SetReadDeadline(time.Now().Add(time.Duration(p.Timeout) * time.Millisecond))
-	var receiveTime time.Time
-	var tcp *TCPHeader
-	for {
-		buf := make([]byte, 1024)
-		numRead, raddr, err := conn.ReadFrom(buf)
-		if err != nil {
-			return ProbePacket{}, err
-		}
-		if raddr.String() != remoteAddress {
-			continue
-		}
-		receiveTime = time.Now()
-		tcp = ParseTCP(buf[:numRead])
-
-		if (tcp.Src == port && tcp.HasFlag(RST)) ||
-			(tcp.Src == port && tcp.HasFlag(SYN) && tcp.HasFlag(ACK)) {
-			break
-		}
-	}
-	return ProbePacket{remoteAddress, *tcp, receiveTime.UnixNano()}, nil
 }
 
 // Grab first interface found and the first IP on it
@@ -268,4 +231,18 @@ func printTCP(tcp *TCPHeader) {
 		str = str + fmt.Sprintf("[ Option: kind=%d len=%d data=%v ]\n", o.Kind, o.Length, o.Data)
 	}
 	fmt.Printf(str)
+}
+
+func wait(wg *sync.WaitGroup, timeout time.Duration) bool {
+	c := make(chan struct{})
+	go func() {
+		defer close(c)
+		wg.Wait()
+	}()
+	select {
+	case <-c:
+		return true // completed normally
+	case <-time.After(timeout):
+		return false // timed out
+	}
 }

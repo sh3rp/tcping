@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"time"
-
 	"github.com/sh3rp/tcping"
 )
 
@@ -42,7 +41,7 @@ func main() {
 
 	src := tcping.GetInterface(iface)
 
-	probe := tcping.NewProbe(src, host, timeout, uint16(port), debug)
+	probe := tcping.NewProbe(src, timeout, debug)
 
 	if debug {
 		fmt.Printf("Src IP: %s\n\n", src)
@@ -50,19 +49,19 @@ func main() {
 
 	if count > 0 {
 		for i := 0; i < count; i++ {
-			sendProbe(probe, debug)
+			sendProbe(probe, host, uint16(port))
 			time.Sleep(1 * time.Second)
 		}
 	} else {
 		for {
-			sendProbe(probe, debug)
+			sendProbe(probe, host, uint16(port))
 			time.Sleep(1 * time.Second)
 		}
 	}
 }
 
-func sendProbe(probe tcping.Probe, debug bool) {
-	result, err := probe.GetLatency()
+func sendProbe(probe tcping.Probe, dstIp string, dstPort uint16) {
+	result, err := probe.GetLatency(dstIp, dstPort)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
