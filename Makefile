@@ -1,10 +1,10 @@
-all: clean protos deps build install
+all: clean protos mod build install
 
 clean:
 	rm -rf include bin target readme.txt
 
-deps:
-	dep ensure
+mod:
+	go mod tidy
 
 protos:
 	wget -O protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protoc-3.6.1-linux-x86_64.zip 
