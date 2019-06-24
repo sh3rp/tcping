@@ -4,7 +4,7 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
-	"github.com/sh3rp/tcping/tcping"
+	"github.com/sh3rp/tcping"
 	context "golang.org/x/net/context"
 	cron "gopkg.in/robfig/cron.v2"
 )
