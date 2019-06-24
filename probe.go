@@ -13,46 +13,40 @@ import (
 )
 
 type Probe struct {
-	SrcIP   string
-	DstIP   string
-	DstPort uint16
+	SrcIp   string
 	Timeout int64 // in milliseconds
 	debug   bool
+	watcher ProbeWatcher
 }
 
-func NewProbe(srcIP, dstIP string, timeout int64, dstPort uint16, debug bool) Probe {
+func NewProbe(srcIp string, timeout int64, debug bool) Probe {
 	return Probe{
-		SrcIP:   srcIP,
-		DstIP:   dstIP,
+		SrcIp:   srcIp,
 		Timeout: timeout,
-		DstPort: dstPort,
 		debug:   debug,
+		watcher: NewProbeWatcher(srcIp),
 	}
 }
 
-func (p Probe) GetLatency() (ProbeResult, error) {
-	var wg sync.WaitGroup
-	wg.Add(1)
+func (p Probe) GetLatency(dstIp string, dstPort uint16) (ProbeResult, error) {
 	var recvProbe ProbePacket
 
-	addrs, err := net.LookupHost(p.DstIP)
+	addrs, err := net.LookupHost(dstIp)
 	if err != nil {
-		log.Fatalf("Error resolving %s. %s\n", p.DstIP, err)
+		log.Fatalf("Error resolving %s. %s\n", dstIp, err)
 	}
-	dstIP := addrs[0]
+	dstIp = addrs[0]
 
-	var startWg sync.WaitGroup
-	startWg.Add(1)
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	p.watcher.WatchFor(dstIp,dstPort,func(tcp *TCPHeader) {
+		if (tcp.HasFlag(RST) || (tcp.HasFlag(SYN) && tcp.HasFlag(ACK))) {
+			wg.Done()
+		}
+	})
+	defer p.watcher.StopWatchFor(dstIp,dstPort)
 
-	go func() {
-		startWg.Done()
-		recvProbe, err = p.WaitForResponse(p.SrcIP, dstIP, p.DstPort)
-		wg.Done()
-	}()
-
-	startWg.Wait()
-
-	sendProbe, err := p.SendPing(p.SrcIP, dstIP, p.DstPort)
+	sendProbe, err := p.SendPing(p.SrcIp, dstIp, dstPort)
 
 	wg.Wait()
 
