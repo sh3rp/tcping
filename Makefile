@@ -7,10 +7,8 @@ mod:
 	go mod tidy
 
 protos:
-	wget -O protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v3.6.1/protoc-3.6.1-linux-x86_64.zip 
-	unzip protoc.zip
 	go get -u github.com/golang/protobuf/protoc-gen-go
-	bin/protoc -I=rpc --go_out=plugins=grpc:rpc rpc/tcping.proto 
+	protoc -I=rpc --go_out=plugins=grpc:rpc rpc/tcping.proto 
 
 build:
 	mkdir target

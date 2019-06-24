@@ -8,8 +8,6 @@ import (
 	fmt "fmt"
 	proto "github.com/golang/protobuf/proto"
 	grpc "google.golang.org/grpc"
-	codes "google.golang.org/grpc/codes"
-	status "google.golang.org/grpc/status"
 	math "math"
 )
 
@@ -578,32 +576,6 @@ type TcpingServiceServer interface {
 	GetSchedules(context.Context, *Empty) (*ProbeSchedules, error)
 	GetProbeResults(context.Context, *ProbeQuery) (*ProbeQueryResults, error)
 	StreamProbeResults(*Probe, TcpingService_StreamProbeResultsServer) error
-}
-
-// UnimplementedTcpingServiceServer can be embedded to have forward compatible implementations.
-type UnimplementedTcpingServiceServer struct {
-}
-
-func (*UnimplementedTcpingServiceServer) CreateProbe(ctx context.Context, req *Probe) (*Probe, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateProbe not implemented")
-}
-func (*UnimplementedTcpingServiceServer) GetProbes(ctx context.Context, req *Empty) (*Probes, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetProbes not implemented")
-}
-func (*UnimplementedTcpingServiceServer) ScheduleProbe(ctx context.Context, req *ProbeSchedule) (*ProbeSchedule, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ScheduleProbe not implemented")
-}
-func (*UnimplementedTcpingServiceServer) UnscheduleProbe(ctx context.Context, req *ProbeSchedule) (*Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UnscheduleProbe not implemented")
-}
-func (*UnimplementedTcpingServiceServer) GetSchedules(ctx context.Context, req *Empty) (*ProbeSchedules, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetSchedules not implemented")
-}
-func (*UnimplementedTcpingServiceServer) GetProbeResults(ctx context.Context, req *ProbeQuery) (*ProbeQueryResults, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetProbeResults not implemented")
-}
-func (*UnimplementedTcpingServiceServer) StreamProbeResults(req *Probe, srv TcpingService_StreamProbeResultsServer) error {
-	return status.Errorf(codes.Unimplemented, "method StreamProbeResults not implemented")
 }
 
 func RegisterTcpingServiceServer(s *grpc.Server, srv TcpingServiceServer) {
