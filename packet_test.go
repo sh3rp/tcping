@@ -22,3 +22,10 @@ func TestTCPHeaderSetWindow(t *testing.T) {
 	tcp := NewTCPHeader().Win(1000)
 	assert.Equal(t, tcp.Window, uint16(1000))
 }
+
+func TestTCPHeaderSetSynAck(t *testing.T) {
+	tcp := NewTCPHeader().WithFlag(SYN)
+	assert.True(t, tcp.HasFlag(SYN))
+	tcp = NewTCPHeader().WithFlag(ACK)
+	assert.True(t, tcp.HasFlag(ACK))
+}

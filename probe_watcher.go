@@ -1,6 +1,7 @@
 package tcping
 
 import (
+	"log"
 	"net"
 )
 
@@ -11,27 +12,36 @@ type ProbeWatcher interface {
 
 type probeWatcher struct {
 	localAddress string
-	watches map[string]map[uint16]func(*TCPHeader)
+	watches      map[string]map[uint16]func(*TCPHeader)
+	notify       chan ipPort
 }
 
-func NewProbeWatcher(localAddress string) ProbeWatcher{
-	return probeWatcher{
+type ipPort struct {
+	ip   string
+	port uint16
+}
+
+func NewProbeWatcher(localAddress string, notify chan ipPort) ProbeWatcher {
+	pw := &probeWatcher{
 		localAddress: localAddress,
-		watches: make(map[string]map[uint16]func(*TCPHeader)),
+		watches:      make(map[string]map[uint16]func(*TCPHeader)),
+		notify:       notify,
 	}
+	go pw.watch()
+	return pw
 }
 
-func (pw probeWatcher) WatchFor(srcIp string, srcPort uint16, f func(*TCPHeader)) {
-	if _,ok := pw.watches[srcIp]; !ok {
+func (pw *probeWatcher) WatchFor(srcIp string, srcPort uint16, f func(*TCPHeader)) {
+	if _, ok := pw.watches[srcIp]; !ok {
 		pw.watches[srcIp] = make(map[uint16]func(*TCPHeader))
 	}
 	pw.watches[srcIp][srcPort] = f
 }
 
-func (pw probeWatcher) StopWatchFor(srcIp string, srcPort uint16) {
+func (pw *probeWatcher) StopWatchFor(srcIp string, srcPort uint16) {
 	if _, ipExists := pw.watches[srcIp]; ipExists {
 		if _, portExists := pw.watches[srcIp][srcPort]; portExists {
-			delete(pw.watches[srcIp],srcPort)
+			delete(pw.watches[srcIp], srcPort)
 		}
 	}
 }
@@ -54,13 +64,15 @@ func (pw probeWatcher) watch() {
 		if err != nil {
 			return
 		}
-		if _, watched := pw.watches[raddr.String()]; !watched {
-			continue
-		}
+
 		tcp = ParseTCP(buf[:numRead])
 
-		if f, hasPort := pw.watches[raddr.String()][tcp.Src]; hasPort {
-			f(tcp)
+		if _, hasIP := pw.watches[raddr.String()]; hasIP {
+			if f, hasPort := pw.watches[raddr.String()][tcp.Src]; hasPort {
+				log.Printf("triggered")
+				f(tcp)
+				pw.notify <- ipPort{raddr.String(), tcp.Src}
+			}
 		}
 	}
 }

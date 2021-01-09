@@ -3,8 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"time"
+
 	"github.com/sh3rp/tcping"
 )
 
@@ -17,6 +19,8 @@ var timeout int64
 var debug bool
 var count int
 var showVersion bool
+var runAsService bool
+var webservicePort int
 
 func main() {
 	flag.IntVar(&port, "p", 80, "Port to use for the TCP connection")
@@ -25,10 +29,20 @@ func main() {
 	flag.StringVar(&iface, "i", "", "Interface to use as the source of the TCP packets")
 	flag.Int64Var(&timeout, "t", 3000, "Time in milliseconds to wait for probe to return")
 	flag.BoolVar(&showVersion, "v", false, "Version info")
+	flag.BoolVar(&runAsService, "S", false, "Run as a webservice in a webserver")
+	flag.IntVar(&webservicePort, "P", 8080, "Port to run webservice on")
 	flag.Parse()
 
 	if showVersion {
 		fmt.Printf("tcping v%s\n", VERSION)
+		return
+	}
+
+	if runAsService {
+		log.Printf("Starting webservice on port %d", webservicePort)
+		src := tcping.GetInterface(iface)
+		probe := tcping.NewProbe(src, timeout, debug)
+		log.Printf("%s", tcping.NewWebService(probe).Start(webservicePort))
 		return
 	}
 
@@ -66,19 +80,15 @@ func sendProbe(probe tcping.Probe, dstIp string, dstPort uint16) {
 		fmt.Printf("Error: %v\n", err)
 		return
 	}
-	if result.IsAlive {
-		if debug {
-			fmt.Printf(tcping.FormatResult(result, true))
-		} else {
-			fmt.Printf("Sent from %-15s to %-15s: %d ms\n",
-				probe.SrcIP,
-				probe.DstIP,
-				result.Latency()/int64(time.Millisecond))
-		}
+	if result <= 0 {
+		fmt.Printf("Sent from %-15s to %-15s: %d ms\n",
+			probe.SrcIp,
+			dstIp,
+			result/int64(time.Millisecond))
 	} else {
 		fmt.Printf("Sent from %-15s to %-15s: timeout (%d ms)\n",
-			probe.SrcIP,
-			probe.DstIP,
-			probe.Timeout)
+			probe.SrcIp,
+			dstIp,
+			result/1000)
 	}
 }

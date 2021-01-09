@@ -8,7 +8,6 @@ import (
 	"net"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -16,15 +15,18 @@ type Probe struct {
 	SrcIp   string
 	Timeout int64 // in milliseconds
 	debug   bool
+	notify  chan ipPort
 	watcher ProbeWatcher
 }
 
 func NewProbe(srcIp string, timeout int64, debug bool) Probe {
+	n := make(chan ipPort)
 	return Probe{
 		SrcIp:   srcIp,
 		Timeout: timeout,
 		debug:   debug,
-		watcher: NewProbeWatcher(srcIp),
+		notify:  n,
+		watcher: NewProbeWatcher(srcIp, n),
 	}
 }
 
@@ -34,25 +36,20 @@ func (p Probe) GetLatency(dstIp string, dstPort uint16) (int64, error) {
 		log.Fatalf("Error resolving %s. %s\n", dstIp, err)
 	}
 	dstIp = addrs[0]
-	var mark int64
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
 	p.watcher.WatchFor(dstIp, dstPort, func(tcp *TCPHeader) {
 		if tcp.HasFlag(RST) || (tcp.HasFlag(SYN) && tcp.HasFlag(ACK)) {
-			mark = time.Now().UnixNano()
-			wg.Done()
+			p.notify <- ipPort{dstIp, dstPort}
 		}
 	})
-	defer p.watcher.StopWatchFor(dstIp, dstPort)
 
-	sendProbe, err := p.SendPing(p.SrcIp, dstIp, dstPort)
+	_, err = p.SendPing(p.SrcIp, dstIp, dstPort)
 
-	isAlive := wait(wg, time.Duration(p.Timeout)*time.Millisecond)
+	isAlive, roundTripTime := NewWaiter(time.Duration(p.Timeout), p.notify).wait()
 
 	if isAlive {
-		return (mark - sendProbe.Mark), nil
+		return roundTripTime, nil
 	} else {
-		return 0, errors.New("TCPing to host timeout")
+		return 0, errors.New(fmt.Sprintf("TCPing to host timeout: %+v", err))
 	}
 }
 
@@ -233,16 +230,27 @@ func printTCP(tcp *TCPHeader) {
 	fmt.Printf(str)
 }
 
-func wait(wg *sync.WaitGroup, timeout time.Duration) bool {
-	c := make(chan struct{})
-	go func() {
-		defer close(c)
-		wg.Wait()
-	}()
-	select {
-	case <-c:
-		return true // completed normally
-	case <-time.After(timeout):
-		return false // timed out
+func NewWaiter(duration time.Duration, notify chan ipPort) waiter {
+	return waiter{
+		duration: duration,
+		notify:   notify,
+	}
+}
+
+type waiter struct {
+	duration time.Duration
+	notify   chan ipPort
+}
+
+func (w waiter) wait() (bool, int64) {
+	start := time.Now()
+	for {
+		select {
+		case <-w.notify:
+			mark := time.Now().Sub(start).Nanoseconds()
+			return true, mark
+		case <-time.After(w.duration):
+			return false, -1
+		}
 	}
 }
