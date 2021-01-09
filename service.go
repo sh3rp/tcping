@@ -25,25 +25,25 @@ func (ws WebService) Start(port int) error {
 func (ws WebService) sendProbe(res http.ResponseWriter, req *http.Request) {
 	host := req.URL.Query().Get("ip")
 	if host == "" {
-		res.Write(response(1, "Must supply a host IP", Result{}))
+		res.Write(response(1, "host: Must supply a host IP", Result{}))
 		return
 	}
 	portStr := req.URL.Query().Get("port")
 	port := 80
 	var err error
-	if portStr == "" {
+	if portStr != "" {
 		port, err = strconv.Atoi(portStr)
 		if err != nil {
-			res.Write(response(2, err.Error(), Result{}))
+			res.Write(response(2, fmt.Sprintf("port: %s", err.Error()), Result{}))
 			return
 		}
 	}
 	countStr := req.URL.Query().Get("count")
 	count := 1
-	if countStr == "" {
+	if countStr != "" {
 		count, err = strconv.Atoi(countStr)
 		if err != nil {
-			res.Write(response(3, err.Error(), Result{}))
+			res.Write(response(3, fmt.Sprintf("count: %s", err.Error()), Result{}))
 			return
 		}
 	}
@@ -69,19 +69,19 @@ func response(code int, message string, probes Result) []byte {
 }
 
 type Response struct {
-	Code    int
-	Message string
-	Probe   Result
+	Code    int    `json:"code"`
+	Message string `json:"msg"`
+	Probe   Result `json:"probe"`
 }
 
 type Result struct {
-	IP    string
-	Port  int
-	Marks []Mark
+	IP    string `json:"ip"`
+	Port  int    `json:"port"`
+	Marks []Mark `json:"marks"`
 }
 
 type Mark struct {
-	Timestamp time.Time
-	Delta     int64
-	Error     error
+	Timestamp time.Time `json:"timestamp"`
+	Delta     int64     `json:"delta"`
+	Error     error     `json:"error"`
 }

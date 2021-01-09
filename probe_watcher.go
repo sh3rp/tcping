@@ -1,7 +1,6 @@
 package tcping
 
 import (
-	"log"
 	"net"
 )
 
@@ -69,7 +68,6 @@ func (pw probeWatcher) watch() {
 
 		if _, hasIP := pw.watches[raddr.String()]; hasIP {
 			if f, hasPort := pw.watches[raddr.String()][tcp.Src]; hasPort {
-				log.Printf("triggered")
 				f(tcp)
 				pw.notify <- ipPort{raddr.String(), tcp.Src}
 			}
