@@ -6,46 +6,38 @@ import (
 
 type ProbeWatcher interface {
 	WatchFor(string, uint16, func(*TCPHeader))
-	StopWatchFor(string, uint16)
 }
 
 type probeWatcher struct {
 	localAddress string
-	watches      map[string]map[uint16]func(*TCPHeader)
-	notify       chan ipPort
+	ipPort       IpPort
+	callback     func(*TCPHeader)
 }
 
-type ipPort struct {
+type IpPort struct {
 	ip   string
 	port uint16
 }
 
-func NewProbeWatcher(localAddress string, notify chan ipPort) ProbeWatcher {
+type Packet struct {
+	ipPort IpPort
+	header *TCPHeader
+}
+
+func NewProbeWatcher(localAddress string) ProbeWatcher {
 	pw := &probeWatcher{
 		localAddress: localAddress,
-		watches:      make(map[string]map[uint16]func(*TCPHeader)),
-		notify:       notify,
 	}
 	go pw.watch()
 	return pw
 }
 
-func (pw *probeWatcher) WatchFor(srcIp string, srcPort uint16, f func(*TCPHeader)) {
-	if _, ok := pw.watches[srcIp]; !ok {
-		pw.watches[srcIp] = make(map[uint16]func(*TCPHeader))
-	}
-	pw.watches[srcIp][srcPort] = f
+func (pw *probeWatcher) WatchFor(srcIp string, srcPort uint16, f func(tcp *TCPHeader)) {
+	pw.ipPort = IpPort{srcIp, srcPort}
+	pw.callback = f
 }
 
-func (pw *probeWatcher) StopWatchFor(srcIp string, srcPort uint16) {
-	if _, ipExists := pw.watches[srcIp]; ipExists {
-		if _, portExists := pw.watches[srcIp][srcPort]; portExists {
-			delete(pw.watches[srcIp], srcPort)
-		}
-	}
-}
-
-func (pw probeWatcher) watch() {
+func (pw *probeWatcher) watch() {
 	netaddr, err := net.ResolveIPAddr("ip4", pw.localAddress)
 	if err != nil {
 		return
@@ -66,11 +58,8 @@ func (pw probeWatcher) watch() {
 
 		tcp = ParseTCP(buf[:numRead])
 
-		if _, hasIP := pw.watches[raddr.String()]; hasIP {
-			if f, hasPort := pw.watches[raddr.String()][tcp.Src]; hasPort {
-				f(tcp)
-				pw.notify <- ipPort{raddr.String(), tcp.Src}
-			}
+		if raddr.String() == pw.ipPort.ip && tcp.Src == pw.ipPort.port {
+			pw.callback(tcp)
 		}
 	}
 }

@@ -13,20 +13,15 @@ import (
 
 type Probe struct {
 	SrcIp   string
-	Timeout int64 // in milliseconds
+	Timeout time.Duration // in milliseconds
 	debug   bool
-	notify  chan ipPort
-	watcher ProbeWatcher
 }
 
-func NewProbe(srcIp string, timeout int64, debug bool) Probe {
-	n := make(chan ipPort)
+func NewProbe(srcIp string, timeout time.Duration, debug bool) Probe {
 	return Probe{
 		SrcIp:   srcIp,
 		Timeout: timeout,
 		debug:   debug,
-		notify:  n,
-		watcher: NewProbeWatcher(srcIp, n),
 	}
 }
 
@@ -36,24 +31,63 @@ func (p Probe) GetLatency(dstIp string, dstPort uint16) (int64, error) {
 		log.Fatalf("Error resolving %s. %s\n", dstIp, err)
 	}
 	dstIp = addrs[0]
-	p.watcher.WatchFor(dstIp, dstPort, func(tcp *TCPHeader) {
-		if tcp.HasFlag(RST) || (tcp.HasFlag(SYN) && tcp.HasFlag(ACK)) {
-			p.notify <- ipPort{dstIp, dstPort}
+
+	notify := make(chan *TCPHeader)
+
+	go func(src string, dst string, dstPort uint16) {
+		netaddr, err := net.ResolveIPAddr("ip4", src)
+		if err != nil {
+			return
 		}
-	})
 
-	_, err = p.SendPing(p.SrcIp, dstIp, dstPort)
+		conn, err := net.ListenIP("ip4:tcp", netaddr)
+		if err != nil {
+			return
+		}
 
-	isAlive, roundTripTime := NewWaiter(time.Duration(p.Timeout), p.notify).wait()
+		var tcp *TCPHeader
+		for {
+			buf := make([]byte, 1024)
+			numRead, raddr, err := conn.ReadFrom(buf)
+			if err != nil {
+				return
+			}
 
-	if isAlive {
-		return roundTripTime, nil
-	} else {
-		return 0, errors.New(fmt.Sprintf("TCPing to host timeout: %+v", err))
+			tcp = ParseTCP(buf[:numRead])
+
+			if raddr.String() == dst && tcp.Src == dstPort {
+				notify <- tcp
+			}
+		}
+	}(p.SrcIp, dstIp, dstPort)
+
+	send, err := p.SendPing(p.SrcIp, dstIp, dstPort)
+
+	var mark int64
+
+	var done bool
+	for {
+		select {
+		case <-notify:
+			mark = time.Now().UnixNano() - send.Mark
+			done = true
+			break
+		case <-time.After(p.Timeout):
+			mark = -1
+			done = true
+			break
+		}
+		if done {
+			break
+		}
 	}
+
+	return mark, nil
 }
 
 func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) (ProbePacket, error) {
+
+	// reserve a local port
 
 	tmpAddr, err := net.ResolveTCPAddr("tcp", fmt.Sprintf("%s:0", srcIP))
 
@@ -66,6 +100,8 @@ func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) (ProbePacket, error
 		return ProbePacket{}, err
 	}
 	defer l.Close()
+
+	// create the packet
 
 	packet := NewTCPHeader().
 		SrcPort(uint16(l.Addr().(*net.TCPAddr).Port)).
@@ -106,6 +142,7 @@ func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) (ProbePacket, error
 	sendTime := time.Now().UnixNano()
 
 	numWrote, err := conn.Write(data)
+	//err = c.SendMsg(socket.Message{net.Buffers}, 0)
 
 	if err != nil {
 		return ProbePacket{}, err
@@ -228,29 +265,4 @@ func printTCP(tcp *TCPHeader) {
 		str = str + fmt.Sprintf("[ Option: kind=%d len=%d data=%v ]\n", o.Kind, o.Length, o.Data)
 	}
 	fmt.Printf(str)
-}
-
-func NewWaiter(duration time.Duration, notify chan ipPort) waiter {
-	return waiter{
-		duration: duration,
-		notify:   notify,
-	}
-}
-
-type waiter struct {
-	duration time.Duration
-	notify   chan ipPort
-}
-
-func (w waiter) wait() (bool, int64) {
-	start := time.Now()
-	for {
-		select {
-		case <-w.notify:
-			mark := time.Now().Sub(start).Nanoseconds()
-			return true, mark
-		case <-time.After(w.duration):
-			return false, -1
-		}
-	}
 }

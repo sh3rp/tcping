@@ -41,7 +41,7 @@ func main() {
 	if runAsService {
 		log.Printf("Starting webservice on port %d", webservicePort)
 		src := tcping.GetInterface(iface)
-		probe := tcping.NewProbe(src, timeout, debug)
+		probe := tcping.NewProbe(src, time.Duration(time.Duration(timeout)*time.Millisecond), debug)
 		log.Printf("%s", tcping.NewWebService(probe).Start(webservicePort))
 		return
 	}
@@ -55,7 +55,7 @@ func main() {
 
 	src := tcping.GetInterface(iface)
 
-	probe := tcping.NewProbe(src, timeout, debug)
+	probe := tcping.NewProbe(src, time.Duration(time.Duration(timeout)*time.Millisecond), debug)
 
 	if debug {
 		fmt.Printf("Src IP: %s\n\n", src)
