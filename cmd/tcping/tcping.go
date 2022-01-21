@@ -80,15 +80,15 @@ func sendProbe(probe tcping.Probe, dstIp string, dstPort uint16) {
 		fmt.Printf("Error: %v\n", err)
 		return
 	}
-	if result <= 0 {
+	if err != nil {
+		fmt.Printf("Sent from %-15s to %-15s: error:%v)\n",
+			probe.SrcIp,
+			dstIp,
+			err)
+	} else {
 		fmt.Printf("Sent from %-15s to %-15s: %d ms\n",
 			probe.SrcIp,
 			dstIp,
-			result/int64(time.Millisecond))
-	} else {
-		fmt.Printf("Sent from %-15s to %-15s: timeout (%d ms)\n",
-			probe.SrcIp,
-			dstIp,
-			result/1000)
+			result/10000)
 	}
 }

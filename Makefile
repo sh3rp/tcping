@@ -7,6 +7,7 @@ mod:
 	go mod tidy
 
 build:
+	rm -rf target
 	mkdir target
 	go build -o target/tcping cmd/tcping/tcping.go
 	sudo setcap cap_net_raw+ep target/tcping

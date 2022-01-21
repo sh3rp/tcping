@@ -64,25 +64,16 @@ func (p Probe) GetLatency(dstIp string, dstPort uint16) (int64, error) {
 	send, err := p.SendPing(p.SrcIp, dstIp, dstPort)
 
 	var mark int64
-
-	var done bool
-	for {
-		select {
-		case <-notify:
-			mark = time.Now().UnixNano() - send.Mark
-			done = true
-			break
-		case <-time.After(p.Timeout):
-			mark = -1
-			done = true
-			break
-		}
-		if done {
-			break
-		}
+	select {
+	case <-notify:
+		mark = time.Now().UnixNano() - send.Mark
+		break
+	case <-time.After(p.Timeout):
+		err = fmt.Errorf("timeout: %dms", p.Timeout)
+		break
 	}
 
-	return mark, nil
+	return mark, err
 }
 
 func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) (ProbePacket, error) {
