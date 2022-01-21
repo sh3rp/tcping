@@ -69,7 +69,7 @@ func (p Probe) GetLatency(dstIp string, dstPort uint16) (int64, error) {
 		mark = time.Now().UnixNano() - send.Mark
 		break
 	case <-time.After(p.Timeout):
-		err = fmt.Errorf("timeout: %dms", p.Timeout)
+		err = fmt.Errorf("timeout: %dms", p.Timeout/1000000)
 		break
 	}
 
