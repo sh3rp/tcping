@@ -25,7 +25,7 @@ func NewProbe(srcIp string, timeout time.Duration, debug bool) Probe {
 	}
 }
 
-func (p Probe) GetLatency(dstIp string, dstPort uint16) (int64, error) {
+func (p Probe) GetLatency(dstIp string, dstPort uint16) (float64, error) {
 	addrs, err := net.LookupHost(dstIp)
 	if err != nil {
 		log.Fatalf("Error resolving %s. %s\n", dstIp, err)
@@ -63,10 +63,10 @@ func (p Probe) GetLatency(dstIp string, dstPort uint16) (int64, error) {
 
 	send, err := p.SendPing(p.SrcIp, dstIp, dstPort)
 
-	var mark int64
+	var mark float64
 	select {
 	case <-notify:
-		mark = time.Now().UnixNano() - send.Mark
+		mark = float64(time.Now().UnixNano()) - send.Mark
 		break
 	case <-time.After(p.Timeout):
 		err = fmt.Errorf("timeout: %dms", p.Timeout/1000000)
@@ -130,7 +130,7 @@ func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) (ProbePacket, error
 
 	defer conn.Close()
 
-	sendTime := time.Now().UnixNano()
+	sendTime := float64(time.Now().UnixNano())
 
 	numWrote, err := conn.Write(data)
 	//err = c.SendMsg(socket.Message{net.Buffers}, 0)

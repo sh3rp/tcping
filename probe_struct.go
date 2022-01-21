@@ -3,7 +3,7 @@ package tcping
 type ProbePacket struct {
 	IP     string
 	Header TCPHeader
-	Mark   int64
+	Mark   float64
 }
 
 type ProbeResult struct {
@@ -12,6 +12,6 @@ type ProbeResult struct {
 	IsAlive  bool
 }
 
-func (result ProbeResult) Latency() int64 {
+func (result ProbeResult) Latency() float64 {
 	return result.RxPacket.Mark - result.TxPacket.Mark
 }

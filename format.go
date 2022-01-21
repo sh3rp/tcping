@@ -20,7 +20,7 @@ func FormatResult(result ProbeResult, useColor bool) string {
 	var str string
 	txBumperSpace := (27 - len(result.TxPacket.IP)) / 2
 	rxBumperSpace := (27 - len(result.RxPacket.IP)) / 2
-	msLabel := fmt.Sprintf("%d ms", result.Latency()/int64(time.Millisecond))
+	msLabel := fmt.Sprintf("%d ms", result.Latency()/float64(time.Millisecond))
 
 	str = str + strings.Repeat(" ", ((27+27)+len(msLabel))/2) + msLabel + "\n"
 	fmtStr := "%s" +
