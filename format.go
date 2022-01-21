@@ -3,7 +3,6 @@ package tcping
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/aybabtme/rgbterm"
 )
@@ -20,7 +19,7 @@ func FormatResult(result ProbePacket, useColor bool) string {
 	var str string
 	txBumperSpace := (27 - len(result.SrcIP)) / 2
 	rxBumperSpace := (27 - len(result.DstIP)) / 2
-	msLabel := fmt.Sprintf("%d ms", result.Mark/float64(time.Millisecond))
+	msLabel := fmt.Sprintf("%f ms", result.Mark/100000)
 
 	str = str + strings.Repeat(" ", ((27+27)+len(msLabel))/2) + msLabel + "\n"
 	fmtStr := "%s" +

@@ -1,8 +1,13 @@
-package tcping
+package tcp
 
 import (
 	"bytes"
 	"encoding/binary"
+	"log"
+	"strconv"
+	"strings"
+
+	"inet.af/netaddr"
 )
 
 const (
@@ -33,6 +38,21 @@ type TCPOption struct {
 	Kind   uint8
 	Length uint8
 	Data   []byte
+}
+
+type TCPPacket struct {
+	SrcIP  netaddr.IP
+	DstIP  netaddr.IP
+	Header *TCPHeader
+	Data   []byte
+}
+
+func NewTCPPacket(srcIP, dstIP string, header *TCPHeader, data []byte) TCPPacket {
+	return TCPPacket{netaddr.MustParseIP(srcIP), netaddr.MustParseIP(dstIP), header, data}
+}
+
+func (pkt TCPPacket) Checksum(srcIP, dstIP netaddr.IP) {
+	pkt.Header.Checksum = Checksum(pkt.Data, srcIP.As4(), dstIP.As4())
 }
 
 func NewTCPHeader() *TCPHeader {
@@ -69,28 +89,6 @@ func (tcp *TCPHeader) WithFlag(flagBit byte) *TCPHeader {
 	return tcp
 }
 
-func ParseTCP(data []byte) *TCPHeader {
-	var tcp TCPHeader
-	r := bytes.NewReader(data)
-	binary.Read(r, binary.BigEndian, &tcp.Src)
-	binary.Read(r, binary.BigEndian, &tcp.Dst)
-	binary.Read(r, binary.BigEndian, &tcp.Seq)
-	binary.Read(r, binary.BigEndian, &tcp.Ack)
-
-	var mix uint16
-	binary.Read(r, binary.BigEndian, &mix)
-	tcp.DataOffset = byte(mix >> 12)
-	tcp.Reserved = byte(mix >> 9 & 7)
-	tcp.ECN = byte(mix >> 6 & 7)
-	tcp.Ctrl = byte(mix & 0x3f)
-
-	binary.Read(r, binary.BigEndian, &tcp.Window)
-	binary.Read(r, binary.BigEndian, &tcp.Checksum)
-	binary.Read(r, binary.BigEndian, &tcp.Urgent)
-
-	return &tcp
-}
-
 func (tcp *TCPHeader) HasFlag(flagBit byte) bool {
 	return tcp.Ctrl&flagBit != 0
 }
@@ -117,6 +115,28 @@ func (tcp *TCPHeader) ACK() bool {
 
 func (tcp *TCPHeader) URG() bool {
 	return tcp.HasFlag(URG)
+}
+
+func ParseTCP(data []byte) *TCPHeader {
+	var tcp TCPHeader
+	r := bytes.NewReader(data)
+	binary.Read(r, binary.BigEndian, &tcp.Src)
+	binary.Read(r, binary.BigEndian, &tcp.Dst)
+	binary.Read(r, binary.BigEndian, &tcp.Seq)
+	binary.Read(r, binary.BigEndian, &tcp.Ack)
+
+	var mix uint16
+	binary.Read(r, binary.BigEndian, &mix)
+	tcp.DataOffset = byte(mix >> 12)
+	tcp.Reserved = byte(mix >> 9 & 7)
+	tcp.ECN = byte(mix >> 6 & 7)
+	tcp.Ctrl = byte(mix & 0x3f)
+
+	binary.Read(r, binary.BigEndian, &tcp.Window)
+	binary.Read(r, binary.BigEndian, &tcp.Checksum)
+	binary.Read(r, binary.BigEndian, &tcp.Urgent)
+
+	return &tcp
 }
 
 func (tcp *TCPHeader) MarshalTCP() []byte {
@@ -188,4 +208,16 @@ func Checksum(data []byte, srcip [4]byte, dstip [4]byte) uint16 {
 	sum = sum + (sum >> 16)
 
 	return uint16(^sum)
+}
+
+func to4byte(addr string) [4]byte {
+	parts := strings.Split(addr, ".")
+	b0, err := strconv.Atoi(parts[0])
+	if err != nil {
+		log.Fatalf("to4byte: %s (latency works with IPv4 addresses only, but not IPv6!)\n", err)
+	}
+	b1, _ := strconv.Atoi(parts[1])
+	b2, _ := strconv.Atoi(parts[2])
+	b3, _ := strconv.Atoi(parts[3])
+	return [4]byte{byte(b0), byte(b1), byte(b2), byte(b3)}
 }

@@ -45,13 +45,10 @@ func (p Probe) GetLatency(dstIp string, dstPort uint16) (ProbePacket, error) {
 			return
 		}
 
-		var mark float64
-
 		var tcp *TCPHeader
 		for {
 			buf := make([]byte, 1024)
 			numRead, raddr, err := conn.ReadFrom(buf)
-			mark = float64(time.Now().UnixNano())
 			if err != nil {
 				return
 			}
@@ -59,25 +56,26 @@ func (p Probe) GetLatency(dstIp string, dstPort uint16) (ProbePacket, error) {
 			tcp = ParseTCP(buf[:numRead])
 
 			if raddr.String() == dst && tcp.Src == dstPort {
-				notify <- Recvd{tcp, mark}
+				notify <- Recvd{tcp, Now()}
+				break
 			}
 		}
 	}(p.SrcIp, dstIp, dstPort)
 
-	send, err := p.SendPing(p.SrcIp, dstIp, dstPort)
+	sendTcp, err := p.SendPing(p.SrcIp, dstIp, dstPort)
 
 	var mark float64
-	var recvdTcp Recvd
+	var recvTcp Recvd
 	select {
-	case recvdTcp = <-notify:
-		mark = float64(time.Now().UnixNano()) - recvdTcp.Mark
+	case recvTcp = <-notify:
+		mark = recvTcp.Mark - sendTcp.Mark
 		break
 	case <-time.After(p.Timeout):
-		err = fmt.Errorf("timeout: %dms", p.Timeout/1000000)
+		err = fmt.Errorf("timeout: %dms", p.Timeout/10000)
 		break
 	}
 
-	return ProbePacket{p.SrcIp, dstIp, send.Sent, recvdTcp.Recv, mark}, err
+	return ProbePacket{p.SrcIp, dstIp, sendTcp.Sent, recvTcp.Recv, mark}, err
 }
 
 func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) (ProbePacket, error) {
@@ -134,7 +132,7 @@ func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) (ProbePacket, error
 
 	defer conn.Close()
 
-	sendTime := float64(time.Now().UnixNano())
+	sendTime := Now()
 
 	numWrote, err := conn.Write(data)
 	//err = c.SendMsg(socket.Message{net.Buffers}, 0)
@@ -148,6 +146,10 @@ func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) (ProbePacket, error
 	}
 
 	return ProbePacket{srcIP, dstIP, packet, nil, sendTime}, nil
+}
+
+func Now() float64 {
+	return float64(time.Now().UnixNano())
 }
 
 // Grab first interface found and the first IP on it
@@ -215,49 +217,4 @@ func to4byte(addr string) [4]byte {
 	b2, _ := strconv.Atoi(parts[2])
 	b3, _ := strconv.Atoi(parts[3])
 	return [4]byte{byte(b0), byte(b1), byte(b2), byte(b3)}
-}
-
-func printTCP(tcp *TCPHeader) {
-	var str string
-	str = fmt.Sprintf("[ SRC: %5d ] [ DST: %5d ]\n", tcp.Src, tcp.Dst)
-	str = str + fmt.Sprintf("[ SEQ: %20d ]\n", tcp.Seq)
-	str = str + fmt.Sprintf("[ ACK: %20d ]\n", tcp.Ack)
-	str = str + fmt.Sprintf("[ FLG: ")
-	if tcp.HasFlag(URG) {
-		str = str + "U"
-	} else {
-		str = str + "_"
-	}
-	if tcp.HasFlag(ACK) {
-		str = str + "A"
-	} else {
-		str = str + "_"
-	}
-	if tcp.HasFlag(PSH) {
-		str = str + "P"
-	} else {
-		str = str + "_"
-	}
-	if tcp.HasFlag(RST) {
-		str = str + "R"
-	} else {
-		str = str + "_"
-	}
-	if tcp.HasFlag(SYN) {
-		str = str + "S"
-	} else {
-		str = str + "_"
-	}
-	if tcp.HasFlag(FIN) {
-		str = str + "F"
-	} else {
-		str = str + "_"
-	}
-	str = str + fmt.Sprintf("]")
-	str = str + fmt.Sprintf(" [ WIN: %5d ]\n", tcp.Window)
-	str = str + fmt.Sprintf("[ SUM: %5d ] [ URG: %5d ] \n", tcp.Checksum, tcp.Urgent)
-	for _, o := range tcp.Options {
-		str = str + fmt.Sprintf("[ Option: kind=%d len=%d data=%v ]\n", o.Kind, o.Length, o.Data)
-	}
-	fmt.Printf(str)
 }

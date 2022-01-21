@@ -87,9 +87,13 @@ func sendProbe(probe tcping.Probe, dstIp string, dstPort uint16) {
 			dstIp,
 			err)
 	} else {
-		fmt.Printf("Sent from %-15s to %-15s: %f ms\n",
-			probe.SrcIp,
-			dstIp,
-			p.Mark/1000000)
+		if debug {
+			fmt.Printf("%s\n", tcping.FormatResult(p, true))
+		} else {
+			fmt.Printf("Sent from %-15s to %-15s: %f ms\n",
+				probe.SrcIp,
+				dstIp,
+				p.Mark/1000000)
+		}
 	}
 }
