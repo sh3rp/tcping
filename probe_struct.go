@@ -1,17 +1,14 @@
 package tcping
 
 type ProbePacket struct {
-	IP     string
-	Header TCPHeader
-	Mark   float64
+	SrcIP string
+	DstIP string
+	Sent  *TCPHeader
+	Recv  *TCPHeader
+	Mark  float64
 }
 
-type ProbeResult struct {
-	TxPacket ProbePacket
-	RxPacket ProbePacket
-	IsAlive  bool
-}
-
-func (result ProbeResult) Latency() float64 {
-	return result.RxPacket.Mark - result.TxPacket.Mark
+type Recvd struct {
+	Recv *TCPHeader
+	Mark float64
 }

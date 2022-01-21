@@ -25,14 +25,14 @@ func NewProbe(srcIp string, timeout time.Duration, debug bool) Probe {
 	}
 }
 
-func (p Probe) GetLatency(dstIp string, dstPort uint16) (float64, error) {
+func (p Probe) GetLatency(dstIp string, dstPort uint16) (ProbePacket, error) {
 	addrs, err := net.LookupHost(dstIp)
 	if err != nil {
 		log.Fatalf("Error resolving %s. %s\n", dstIp, err)
 	}
 	dstIp = addrs[0]
 
-	notify := make(chan *TCPHeader)
+	notify := make(chan Recvd)
 
 	go func(src string, dst string, dstPort uint16) {
 		netaddr, err := net.ResolveIPAddr("ip4", src)
@@ -45,10 +45,13 @@ func (p Probe) GetLatency(dstIp string, dstPort uint16) (float64, error) {
 			return
 		}
 
+		var mark float64
+
 		var tcp *TCPHeader
 		for {
 			buf := make([]byte, 1024)
 			numRead, raddr, err := conn.ReadFrom(buf)
+			mark = float64(time.Now().UnixNano())
 			if err != nil {
 				return
 			}
@@ -56,7 +59,7 @@ func (p Probe) GetLatency(dstIp string, dstPort uint16) (float64, error) {
 			tcp = ParseTCP(buf[:numRead])
 
 			if raddr.String() == dst && tcp.Src == dstPort {
-				notify <- tcp
+				notify <- Recvd{tcp, mark}
 			}
 		}
 	}(p.SrcIp, dstIp, dstPort)
@@ -64,16 +67,17 @@ func (p Probe) GetLatency(dstIp string, dstPort uint16) (float64, error) {
 	send, err := p.SendPing(p.SrcIp, dstIp, dstPort)
 
 	var mark float64
+	var recvdTcp Recvd
 	select {
-	case <-notify:
-		mark = float64(time.Now().UnixNano()) - send.Mark
+	case recvdTcp = <-notify:
+		mark = float64(time.Now().UnixNano()) - recvdTcp.Mark
 		break
 	case <-time.After(p.Timeout):
 		err = fmt.Errorf("timeout: %dms", p.Timeout/1000000)
 		break
 	}
 
-	return mark, err
+	return ProbePacket{p.SrcIp, dstIp, send.Sent, recvdTcp.Recv, mark}, err
 }
 
 func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) (ProbePacket, error) {
@@ -143,7 +147,7 @@ func (p Probe) SendPing(srcIP, dstIP string, dstPort uint16) (ProbePacket, error
 		return ProbePacket{}, errors.New(fmt.Sprintf("Error writing %d/%d bytes\n", numWrote, len(data)))
 	}
 
-	return ProbePacket{srcIP, *packet, sendTime}, nil
+	return ProbePacket{srcIP, dstIP, packet, nil, sendTime}, nil
 }
 
 // Grab first interface found and the first IP on it

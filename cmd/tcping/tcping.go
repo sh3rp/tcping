@@ -49,7 +49,8 @@ func main() {
 	host = flag.Arg(0)
 
 	if host == "" {
-		fmt.Printf("Must supply a host to ping.\n")
+		fmt.Printf("You must supply a host/IP.")
+		flag.Usage()
 		os.Exit(1)
 	}
 
@@ -75,7 +76,7 @@ func main() {
 }
 
 func sendProbe(probe tcping.Probe, dstIp string, dstPort uint16) {
-	result, err := probe.GetLatency(dstIp, dstPort)
+	p, err := probe.GetLatency(dstIp, dstPort)
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
 		return
@@ -89,6 +90,6 @@ func sendProbe(probe tcping.Probe, dstIp string, dstPort uint16) {
 		fmt.Printf("Sent from %-15s to %-15s: %f ms\n",
 			probe.SrcIp,
 			dstIp,
-			result/1000000)
+			p.Mark/1000000)
 	}
 }

@@ -14,13 +14,13 @@ type Color struct {
 	B uint8
 }
 
-func FormatResult(result ProbeResult, useColor bool) string {
-	tx := result.TxPacket.Header
-	rx := result.RxPacket.Header
+func FormatResult(result ProbePacket, useColor bool) string {
+	tx := result.Sent
+	rx := result.Recv
 	var str string
-	txBumperSpace := (27 - len(result.TxPacket.IP)) / 2
-	rxBumperSpace := (27 - len(result.RxPacket.IP)) / 2
-	msLabel := fmt.Sprintf("%d ms", result.Latency()/float64(time.Millisecond))
+	txBumperSpace := (27 - len(result.SrcIP)) / 2
+	rxBumperSpace := (27 - len(result.DstIP)) / 2
+	msLabel := fmt.Sprintf("%d ms", result.Mark/float64(time.Millisecond))
 
 	str = str + strings.Repeat(" ", ((27+27)+len(msLabel))/2) + msLabel + "\n"
 	fmtStr := "%s" +
@@ -34,10 +34,10 @@ func FormatResult(result ProbeResult, useColor bool) string {
 		"%s\n"
 	str = str + fmt.Sprintf(fmtStr,
 		Open(),
-		rgbterm.FgString(result.TxPacket.IP, 231, 127, 255),
+		rgbterm.FgString(result.SrcIP, 231, 127, 255),
 		Close(),
 		Open(),
-		rgbterm.FgString(result.RxPacket.IP, 231, 127, 255),
+		rgbterm.FgString(result.DstIP, 231, 127, 255),
 		Close())
 	str = str + fmt.Sprintf("%s %s %s %s %s %s %s %s     %s %s %s %s %s %s %s %s\n",
 		Open(),
@@ -77,12 +77,12 @@ func FormatResult(result ProbeResult, useColor bool) string {
 	str = str + fmt.Sprintf("%s %s %s%s%s%s%s%s%s %s %s %s %s     %s %s %s%s%s%s%s%s%s %s %s %s %s\n",
 		Open(),
 		Field("FLG"),
-		FlagEntry(tx, URG, useColor),
-		FlagEntry(tx, ACK, useColor),
-		FlagEntry(tx, PSH, useColor),
-		FlagEntry(tx, RST, useColor),
-		FlagEntry(tx, SYN, useColor),
-		FlagEntry(tx, FIN, useColor),
+		FlagEntry(*tx, URG, useColor),
+		FlagEntry(*tx, ACK, useColor),
+		FlagEntry(*tx, PSH, useColor),
+		FlagEntry(*tx, RST, useColor),
+		FlagEntry(*tx, SYN, useColor),
+		FlagEntry(*tx, FIN, useColor),
 		Close(),
 		Open(),
 		Field("WIN"),
@@ -90,12 +90,12 @@ func FormatResult(result ProbeResult, useColor bool) string {
 		Close(),
 		Open(),
 		Field("FLG"),
-		FlagEntry(rx, URG, useColor),
-		FlagEntry(rx, ACK, useColor),
-		FlagEntry(rx, PSH, useColor),
-		FlagEntry(rx, RST, useColor),
-		FlagEntry(rx, SYN, useColor),
-		FlagEntry(rx, FIN, useColor),
+		FlagEntry(*rx, URG, useColor),
+		FlagEntry(*rx, ACK, useColor),
+		FlagEntry(*rx, PSH, useColor),
+		FlagEntry(*rx, RST, useColor),
+		FlagEntry(*rx, SYN, useColor),
+		FlagEntry(*rx, FIN, useColor),
 		Close(),
 		Open(),
 		Field("WIN"),

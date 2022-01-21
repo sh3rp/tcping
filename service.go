@@ -52,7 +52,7 @@ func (ws WebService) sendProbe(res http.ResponseWriter, req *http.Request) {
 
 	for i := 0; i < count; i++ {
 		latency, err := ws.probe.GetLatency(host, uint16(port))
-		probes = append(probes, Mark{Timestamp: time.Now(), Latency: float64(latency) / float64(time.Millisecond), Error: err})
+		probes = append(probes, Mark{Timestamp: time.Now(), Latency: float64(latency.Mark) / float64(time.Millisecond), Error: err})
 	}
 
 	res.Write(okResponse(Result{IP: host, Port: port, Marks: probes}))
